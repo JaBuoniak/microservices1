@@ -2,9 +2,12 @@ package com.epam.songservice.controller;
 
 import com.epam.songservice.dto.CreateSongRequest;
 import com.epam.songservice.dto.CreateSongResponse;
+import com.epam.songservice.dto.GetSongResponse;
 import com.epam.songservice.service.SongService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -23,5 +26,10 @@ public class SongController {
     @PostMapping
     public ResponseEntity<CreateSongResponse> createSong(@Valid @RequestBody CreateSongRequest request) {
         return ResponseEntity.ok(songService.createSong(request));
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<GetSongResponse> getSong(@PathVariable int id) {
+        return ResponseEntity.ok(songService.getSong(id));
     }
 }

@@ -8,6 +8,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -35,6 +36,27 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleSongAlreadyExists(SongAlreadyExistsException ex) {
         ErrorResponse error = new ErrorResponse(ex.getMessage(), "409");
         return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
+
+    @ExceptionHandler(SongNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleSongNotFound(SongNotFoundException ex) {
+        ErrorResponse error = new ErrorResponse(ex.getMessage(), "404");
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+    }
+
+    @ExceptionHandler(InvalidSongIdException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidSongId(InvalidSongIdException ex) {
+        ErrorResponse error = new ErrorResponse(ex.getMessage(), "400");
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ErrorResponse> handleTypeMismatch(MethodArgumentTypeMismatchException ex) {
+        ErrorResponse error = new ErrorResponse(
+                "Invalid format for ID: '" + ex.getValue() + "'. ID must be a valid integer",
+                "400"
+        );
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
     }
 
     @ExceptionHandler(Exception.class)
