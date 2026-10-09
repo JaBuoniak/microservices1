@@ -4,11 +4,15 @@ import com.epam.songservice.dto.CreateSongRequest;
 import com.epam.songservice.dto.CreateSongResponse;
 import com.epam.songservice.dto.GetSongResponse;
 import com.epam.songservice.entity.Song;
+import com.epam.songservice.exception.InvalidCsvParameterException;
 import com.epam.songservice.exception.InvalidSongIdException;
 import com.epam.songservice.exception.SongAlreadyExistsException;
 import com.epam.songservice.exception.SongNotFoundException;
 import com.epam.songservice.repository.SongRepository;
 import org.springframework.stereotype.Service;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Service
 public class SongService {
@@ -53,5 +57,39 @@ public class SongService {
                 song.getDuration(),
                 song.getYear()
         );
+    }
+
+    public List<Integer> deleteSongs(String idsCsv) {
+        if (idsCsv == null || idsCsv.isBlank()) {
+            throw new InvalidCsvParameterException("CSV string must not be empty");
+        }
+
+        if (idsCsv.length() > 200) {
+            throw new InvalidCsvParameterException("CSV string length must not exceed 200 characters");
+        }
+
+        List<Integer> ids = parseAndValidateIds(idsCsv);
+        List<Song> existingSongs = songRepository.findAllById(ids);
+        List<Integer> existingIds = existingSongs.stream().map(Song::getId).toList();
+
+        songRepository.deleteAll(existingSongs);
+        return existingIds;
+    }
+
+    private List<Integer> parseAndValidateIds(String idsCsv) {
+        String[] values = idsCsv.split(",", -1);
+        List<Integer> ids = new ArrayList<>();
+        for (String value : values) {
+            try {
+                int id = Integer.parseInt(value.trim());
+                if (id <= 0) {
+                    throw new InvalidCsvParameterException("Invalid CSV format for IDs: '" + idsCsv + "'");
+                }
+                ids.add(id);
+            } catch (NumberFormatException e) {
+                throw new InvalidCsvParameterException("Invalid CSV format for IDs: '" + idsCsv + "'");
+            }
+        }
+        return ids;
     }
 }
