@@ -5,6 +5,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
@@ -43,6 +44,21 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(InvalidResourceIdException.class)
     public ResponseEntity<ErrorResponse> handleInvalidResourceId(InvalidResourceIdException ex) {
         ErrorResponse error = new ErrorResponse(ex.getMessage(), "400");
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+    }
+
+    @ExceptionHandler(InvalidCsvParameterException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidCsvParameter(InvalidCsvParameterException ex) {
+        ErrorResponse error = new ErrorResponse(ex.getMessage(), "400");
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+    }
+
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public ResponseEntity<ErrorResponse> handleMissingParameter(MissingServletRequestParameterException ex) {
+        ErrorResponse error = new ErrorResponse(
+                "Missing required parameter: " + ex.getParameterName(),
+                "400"
+        );
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
     }
 
