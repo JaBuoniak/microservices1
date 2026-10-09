@@ -1,6 +1,8 @@
 package com.epam.resourceservice.service;
 
 import com.epam.resourceservice.entity.Resource;
+import com.epam.resourceservice.exception.InvalidResourceIdException;
+import com.epam.resourceservice.exception.ResourceNotFoundException;
 import com.epam.resourceservice.repository.ResourceRepository;
 import org.apache.tika.metadata.Metadata;
 import org.springframework.stereotype.Service;
@@ -28,5 +30,15 @@ public class ResourceService {
 
         Resource resource = new Resource(data);
         return resourceRepository.save(resource).getId();
+    }
+
+    public byte[] getResource(int id) {
+        if (id <= 0) {
+            throw new InvalidResourceIdException("Invalid resource ID: " + id + ". ID must be a positive integer");
+        }
+        
+        return resourceRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Resource with ID=" + id + " does not exist"))
+                .getData();
     }
 }
