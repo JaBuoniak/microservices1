@@ -12,5 +12,19 @@ services:
     volumes:
       - resource_db_data:/var/lib/postgresql/data
 
+  song-db:
+    image: postgres:16-alpine
+    container_name: song-db
+    restart: always
+    environment:
+      POSTGRES_DB: song_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5433:5432"
+    volumes:
+      - song_db_data:/var/lib/postgresql/data
+
 volumes:
   resource_db_data:
+  song_db_data:
