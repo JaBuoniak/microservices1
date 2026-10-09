@@ -1,0 +1,16 @@
+services:
+  resource-db:
+    image: postgres:16-alpine
+    container_name: resource-db
+    restart: always
+    environment:
+      POSTGRES_DB: resource_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    volumes:
+      - resource_db_data:/var/lib/postgresql/data
+
+volumes:
+  resource_db_data:

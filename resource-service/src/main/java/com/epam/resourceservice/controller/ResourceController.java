@@ -3,7 +3,6 @@ package com.epam.resourceservice.controller;
 import com.epam.resourceservice.dto.UploadResourceResponse;
 import com.epam.resourceservice.service.ResourceService;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
