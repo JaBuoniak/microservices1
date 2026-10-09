@@ -1,5 +1,7 @@
 package com.epam.resourceservice.service;
 
+import com.epam.resourceservice.exception.InvalidAudioFormatException;
+import org.apache.tika.Tika;
 import org.apache.tika.metadata.Metadata;
 import org.apache.tika.parser.ParseContext;
 import org.apache.tika.parser.mp3.Mp3Parser;
@@ -13,7 +15,18 @@ import java.io.InputStream;
 @Component
 public class Mp3MetadataExtractor {
 
+    private final Tika tika = new Tika();
+
     public Metadata extract(byte[] audioData) {
+        if (audioData == null || audioData.length == 0) {
+            throw new InvalidAudioFormatException("The request body is invalid MP3: body is empty");
+        }
+
+        String detectedType = tika.detect(audioData);
+        if (!"audio/mpeg".equalsIgnoreCase(detectedType)) {
+            throw new InvalidAudioFormatException("The request body is invalid MP3");
+        }
+
         Metadata metadata = new Metadata();
         try (InputStream inputStream = new ByteArrayInputStream(audioData)) {
             ContentHandler handler = new DefaultHandler();
@@ -22,8 +35,13 @@ public class Mp3MetadataExtractor {
 
             parser.parse(inputStream, handler, metadata, parseContext);
         } catch (Exception e) {
-            System.err.println("Failed to extract MP3 metadata: " + e.getMessage());
+            throw new InvalidAudioFormatException("The request body is invalid MP3");
         }
+
+        if (metadata.get("xmpDM:audioCompressor") == null && metadata.get("version") == null && metadata.get("channels") == null) {
+            throw new InvalidAudioFormatException("The request body is invalid MP3");
+        }
+
         return metadata;
     }
 }
