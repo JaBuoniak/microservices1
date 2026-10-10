@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientResponseException;
 
 @Component
 public class SongServiceClient {
@@ -16,17 +17,27 @@ public class SongServiceClient {
     }
 
     public void createSongMetadata(SongMetadataDto metadata) {
-        restClient.post()
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(metadata)
-                .retrieve()
-                .toBodilessEntity();
+        try {
+            restClient.post()
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(metadata)
+                    .retrieve()
+                    .toBodilessEntity();
+        } catch (RestClientResponseException e) {
+            System.out.println("SongService POST /songs error: " + e.getStatusCode() + " - " + e.getResponseBodyAsString());
+            throw e;
+        }
     }
 
     public void deleteSongMetadata(String idsCsv) {
-        restClient.delete()
-                .uri(uriBuilder -> uriBuilder.queryParam("id", idsCsv).build())
-                .retrieve()
-                .toBodilessEntity();
+        try {
+            restClient.delete()
+                    .uri(uriBuilder -> uriBuilder.queryParam("id", idsCsv).build())
+                    .retrieve()
+                    .toBodilessEntity();
+        } catch (RestClientResponseException e) {
+            System.out.println("SongService DELETE /songs error: " + e.getStatusCode() + " - " + e.getResponseBodyAsString());
+            throw e;
+        }
     }
 }

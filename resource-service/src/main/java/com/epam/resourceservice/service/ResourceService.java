@@ -86,7 +86,7 @@ public class ResourceService {
             try {
                 songServiceClient.deleteSongMetadata(deletedCsv);
             } catch (Exception e) {
-                System.err.println("Failed to delete song metadata: " + e.getMessage());
+                System.out.println("Failed to delete song metadata: " + e.getMessage());
             }
         }
 

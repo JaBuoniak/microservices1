@@ -23,6 +23,7 @@ public class GlobalExceptionHandler {
         for (FieldError fieldError : ex.getBindingResult().getFieldErrors()) {
             details.put(fieldError.getField(), fieldError.getDefaultMessage());
         }
+        System.out.println("SongService validation failed: " + details);
         ErrorResponse error = new ErrorResponse("Validation error", "400", details);
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
     }
