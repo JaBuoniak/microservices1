@@ -10,6 +10,7 @@ import com.epam.resourceservice.entity.Resource;
 import com.epam.resourceservice.exception.InvalidCsvParameterException;
 import com.epam.resourceservice.exception.InvalidResourceIdException;
 import com.epam.resourceservice.exception.ResourceNotFoundException;
+import com.epam.resourceservice.mapper.SongMetadataMapper;
 import com.epam.resourceservice.repository.ResourceRepository;
 import com.epam.resourceservice.dto.SongMetadataDto;
 import org.apache.tika.metadata.Metadata;
@@ -20,13 +21,16 @@ public class ResourceService {
     private final ResourceRepository resourceRepository;
     private final Mp3MetadataExtractor metadataExtractor;
     private final SongServiceClient songServiceClient;
+    private final SongMetadataMapper songMetadataMapper;
 
     public ResourceService(ResourceRepository resourceRepository,
                            Mp3MetadataExtractor metadataExtractor,
-                           SongServiceClient songServiceClient) {
+                           SongServiceClient songServiceClient,
+                           SongMetadataMapper songMetadataMapper) {
         this.resourceRepository = resourceRepository;
         this.metadataExtractor = metadataExtractor;
         this.songServiceClient = songServiceClient;
+        this.songMetadataMapper = songMetadataMapper;
     }
 
     public int createResource(byte[] data) {
@@ -42,16 +46,13 @@ public class ResourceService {
         Resource resource = new Resource(data);
         Resource savedResource = resourceRepository.save(resource);
 
-        SongMetadataDto songMetadata = new SongMetadataDto(
-                savedResource.getId(),
-                metadata.get("dc:title"),
-                metadata.get("xmpDM:artist"),
-                metadata.get("xmpDM:album"),
-                metadata.get("xmpDM:duration"),
-                metadata.get("xmpDM:releaseDate")
-        );
-
-        songServiceClient.createSongMetadata(songMetadata);
+        try {
+            SongMetadataDto songMetadata = songMetadataMapper.toDto(savedResource.getId(), metadata);
+            songServiceClient.createSongMetadata(songMetadata);
+        } catch (Exception e) {
+            resourceRepository.delete(savedResource);
+            throw e;
+        }
 
         return savedResource.getId();
     }
