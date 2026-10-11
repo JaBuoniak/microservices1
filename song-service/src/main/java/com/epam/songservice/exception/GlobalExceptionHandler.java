@@ -70,7 +70,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public ResponseEntity<ErrorResponse> handleTypeMismatch(MethodArgumentTypeMismatchException ex) {
         ErrorResponse error = new ErrorResponse(
-                "Invalid format for ID: '" + ex.getValue() + "'. ID must be a valid integer",
+                "Invalid value '" + ex.getValue() + "' for ID. Must be a positive integer",
                 "400"
         );
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);

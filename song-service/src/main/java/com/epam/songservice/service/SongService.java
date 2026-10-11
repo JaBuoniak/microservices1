@@ -25,7 +25,7 @@ public class SongService {
 
     public CreateSongResponse createSong(CreateSongRequest request) {
         if (songRepository.existsById(request.id())) {
-            throw new SongAlreadyExistsException("Metadata with the same ID already exists");
+            throw new SongAlreadyExistsException("Metadata for resource ID=" + request.id() + " already exists");
         }
 
         Song song = new Song(
@@ -43,11 +43,11 @@ public class SongService {
 
     public GetSongResponse getSong(int id) {
         if (id <= 0) {
-            throw new InvalidSongIdException("Invalid song ID: " + id + ". ID must be a positive integer");
+            throw new InvalidSongIdException("Invalid value '" + id + "' for ID. Must be a positive integer");
         }
 
         Song song = songRepository.findById(id)
-                .orElseThrow(() -> new SongNotFoundException("Song metadata with ID=" + id + " not found"));
+                .orElseThrow(() -> new SongNotFoundException("Song metadata for ID=" + id + " not found"));
 
         return new GetSongResponse(
                 song.getId(),
@@ -65,7 +65,7 @@ public class SongService {
         }
 
         if (idsCsv.length() > 200) {
-            throw new InvalidCsvParameterException("CSV string length must not exceed 200 characters");
+            throw new InvalidCsvParameterException("CSV string is too long: received " + idsCsv.length() + " characters, maximum allowed is 200");
         }
 
         List<Integer> ids = parseAndValidateIds(idsCsv);
@@ -80,14 +80,15 @@ public class SongService {
         String[] values = idsCsv.split(",", -1);
         List<Integer> ids = new ArrayList<>();
         for (String value : values) {
+            String trimmed = value.trim();
             try {
-                int id = Integer.parseInt(value.trim());
+                int id = Integer.parseInt(trimmed);
                 if (id <= 0) {
-                    throw new InvalidCsvParameterException("Invalid CSV format for IDs: '" + idsCsv + "'");
+                    throw new InvalidCsvParameterException("Invalid ID format: '" + trimmed + "'. Only positive integers are allowed");
                 }
                 ids.add(id);
             } catch (NumberFormatException e) {
-                throw new InvalidCsvParameterException("Invalid CSV format for IDs: '" + idsCsv + "'");
+                throw new InvalidCsvParameterException("Invalid ID format: '" + trimmed + "'. Only positive integers are allowed");
             }
         }
         return ids;

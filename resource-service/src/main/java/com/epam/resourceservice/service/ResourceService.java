@@ -59,7 +59,7 @@ public class ResourceService {
 
     public byte[] getResource(int id) {
         if (id <= 0) {
-            throw new InvalidResourceIdException("Invalid resource ID: " + id + ". ID must be a positive integer");
+            throw new InvalidResourceIdException("Invalid value '" + id + "' for ID. Must be a positive integer");
         }
 
         return resourceRepository.findById(id)
@@ -73,7 +73,7 @@ public class ResourceService {
         }
 
         if (idsCsv.length() > 200) {
-            throw new InvalidCsvParameterException("CSV string length must not exceed 200 characters");
+            throw new InvalidCsvParameterException("CSV string is too long: received " + idsCsv.length() + " characters, maximum allowed is 200");
         }
 
         List<Integer> ids = parseAndValidateIds(idsCsv);
@@ -98,14 +98,15 @@ public class ResourceService {
         String[] values = idsCsv.split(",", -1);
         List<Integer> ids = new ArrayList<>();
         for (String value : values) {
+            String trimmed = value.trim();
             try {
-                int id = Integer.parseInt(value.trim());
+                int id = Integer.parseInt(trimmed);
                 if (id <= 0) {
-                    throw new InvalidCsvParameterException("Invalid CSV format for IDs: '" + idsCsv + "'");
+                    throw new InvalidCsvParameterException("Invalid ID format: '" + trimmed + "'. Only positive integers are allowed");
                 }
                 ids.add(id);
             } catch (NumberFormatException e) {
-                throw new InvalidCsvParameterException("Invalid CSV format for IDs: '" + idsCsv + "'");
+                throw new InvalidCsvParameterException("Invalid ID format: '" + trimmed + "'. Only positive integers are allowed");
             }
         }
         return ids;
