@@ -84,11 +84,7 @@ public class ResourceService {
 
         if (!existingIds.isEmpty()) {
             String deletedCsv = String.join(",", existingIds.stream().map(String::valueOf).toList());
-            try {
-                songServiceClient.deleteSongMetadata(deletedCsv);
-            } catch (Exception e) {
-                System.out.println("Failed to delete song metadata: " + e.getMessage());
-            }
+            songServiceClient.deleteSongMetadata(deletedCsv);
         }
 
         return existingIds;

@@ -23,7 +23,7 @@ public record CreateSongRequest(
         String album,
 
         @NotNull(message = "Duration is required")
-        @Pattern(regexp = "^([0-5][0-9]):[0-5][0-9]$", message = "Duration must be in mm:ss format with leading zeros")
+        @Pattern(regexp = "^[0-9]{2}:[0-5][0-9]$", message = "Duration must be in mm:ss format with leading zeros")
         String duration,
 
         @NotNull(message = "Year is required")
