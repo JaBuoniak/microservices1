@@ -6,6 +6,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
+
+import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.*;
 
@@ -22,6 +24,33 @@ public class S3StorageService {
     public S3StorageService(S3Client s3Client, @Value("${aws.s3.bucket}") String bucketName) {
         this.s3Client = s3Client;
         this.bucketName = bucketName;
+    }
+
+    public void upload(String key, byte[] data) {
+        PutObjectRequest putRequest = PutObjectRequest.builder()
+                .bucket(bucketName)
+                .key(key)
+                .build();
+
+        s3Client.putObject(putRequest, RequestBody.fromBytes(data));
+    }
+
+    public byte[] download(String key) {
+        GetObjectRequest getRequest = GetObjectRequest.builder()
+                .bucket(bucketName)
+                .key(key)
+                .build();
+
+        return s3Client.getObjectAsBytes(getRequest).asByteArray();
+    }
+
+    public void delete(String key) {
+        DeleteObjectRequest deleteRequest = DeleteObjectRequest.builder()
+                .bucket(bucketName)
+                .key(key)
+                .build();
+
+        s3Client.deleteObject(deleteRequest);
     }
 
     @EventListener(ApplicationReadyEvent.class)

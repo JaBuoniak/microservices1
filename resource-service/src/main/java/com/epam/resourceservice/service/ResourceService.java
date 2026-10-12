@@ -2,6 +2,7 @@ package com.epam.resourceservice.service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 
@@ -22,15 +23,18 @@ public class ResourceService {
     private final Mp3MetadataExtractor metadataExtractor;
     private final SongServiceClient songServiceClient;
     private final SongMetadataMapper songMetadataMapper;
+    private final S3StorageService s3StorageService;
 
     public ResourceService(ResourceRepository resourceRepository,
                            Mp3MetadataExtractor metadataExtractor,
                            SongServiceClient songServiceClient,
-                           SongMetadataMapper songMetadataMapper) {
+                           SongMetadataMapper songMetadataMapper,
+                           S3StorageService s3StorageService) {
         this.resourceRepository = resourceRepository;
         this.metadataExtractor = metadataExtractor;
         this.songServiceClient = songServiceClient;
         this.songMetadataMapper = songMetadataMapper;
+        this.s3StorageService = s3StorageService;
     }
 
     public int createResource(byte[] data) {
@@ -43,7 +47,10 @@ public class ResourceService {
         }
         System.out.println("---------------------------");
 
-        Resource resource = new Resource(data);
+        String location = "resources/" + UUID.randomUUID() + ".mp3";
+        s3StorageService.upload(location, data);
+
+        Resource resource = new Resource(location);
         Resource savedResource = resourceRepository.save(resource);
 
         try {
@@ -51,6 +58,7 @@ public class ResourceService {
             songServiceClient.createSongMetadata(songMetadata);
         } catch (Exception e) {
             resourceRepository.delete(savedResource);
+            s3StorageService.delete(location);
             throw e;
         }
 
@@ -62,9 +70,10 @@ public class ResourceService {
             throw new InvalidResourceIdException("Invalid value '" + id + "' for ID. Must be a positive integer");
         }
 
-        return resourceRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Resource with ID=" + id + " not found"))
-                .getData();
+        Resource resource = resourceRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Resource with ID=" + id + " not found"));
+
+        return s3StorageService.download(resource.getLocation());
     }
 
     public List<Integer> deleteResources(String idsCsv) {
@@ -79,6 +88,10 @@ public class ResourceService {
         List<Integer> ids = parseAndValidateIds(idsCsv);
         List<Resource> existingResources = resourceRepository.findAllById(ids);
         List<Integer> existingIds = existingResources.stream().map(Resource::getId).toList();
+
+        for (Resource resource : existingResources) {
+            s3StorageService.delete(resource.getLocation());
+        }
 
         resourceRepository.deleteAll(existingResources);
 

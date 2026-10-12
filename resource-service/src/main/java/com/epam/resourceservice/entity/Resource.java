@@ -4,7 +4,6 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.Lob;
 import jakarta.persistence.Table;
 
 @Entity
@@ -15,24 +14,23 @@ public class Resource {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @Lob
-    private byte[] data;
-    
+    private String location;
+
     public Resource() {}
 
-    public Resource(byte[] data) {
-        this.data = data;
+    public Resource(String location) {
+        this.location = location;
     }
 
     public Integer getId() {
         return id;
     }
 
-    public byte[] getData() {
-        return data;
+    public String getLocation() {
+        return location;
     }
 
-    public void setData(byte[] data) {
-        this.data = data;
+    public void setLocation(String location) {
+        this.location = location;
     }
 }
