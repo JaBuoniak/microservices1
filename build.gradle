@@ -15,8 +15,12 @@ subprojects {
 
     java {
         toolchain {
-            languageVersion = JavaLanguageVersion.of(21)
+            languageVersion = JavaLanguageVersion.of(17)
         }
+    }
+
+    tasks.named('jar') {
+        enabled = false
     }
 
     repositories {
