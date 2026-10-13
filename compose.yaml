@@ -27,6 +27,21 @@ services:
       # - song_db_data:/var/lib/postgresql/data  # Persisting database data between restarts is not enabled
       - ./init-scripts/song-db:/docker-entrypoint-initdb.d:ro
 
+  song-service:
+    build:
+      context: .
+      dockerfile: song-service/Dockerfile
+    container_name: song-service
+    restart: always
+    environment:
+      SPRING_DATASOURCE_URL: ${SONG_DB_URL}
+      SPRING_DATASOURCE_USERNAME: ${SONG_DB_USER}
+      SPRING_DATASOURCE_PASSWORD: ${SONG_DB_PASSWORD}
+    ports:
+      - "${SONG_SERVICE_PORT}:8081"
+    depends_on:
+      - song-db
+
 # volumes:   # Persisting database data between restarts is not enabled
 #   resource_db_data:
 #   song_db_data:
