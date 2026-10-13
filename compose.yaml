@@ -10,7 +10,8 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - resource_db_data:/var/lib/postgresql/data
+      # - resource_db_data:/var/lib/postgresql/data  # Persisting database data between restarts is not enabled
+      - ./init-scripts/resource-db:/docker-entrypoint-initdb.d:ro
 
   song-db:
     image: postgres:16-alpine
@@ -23,8 +24,9 @@ services:
     ports:
       - "5433:5432"
     volumes:
-      - song_db_data:/var/lib/postgresql/data
+      # - song_db_data:/var/lib/postgresql/data  # Persisting database data between restarts is not enabled
+      - ./init-scripts/song-db:/docker-entrypoint-initdb.d:ro
 
-volumes:
-  resource_db_data:
-  song_db_data:
+# volumes:   # Persisting database data between restarts is not enabled
+#   resource_db_data:
+#   song_db_data:
