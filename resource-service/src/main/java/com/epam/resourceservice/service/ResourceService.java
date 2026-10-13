@@ -8,59 +8,37 @@ import org.springframework.stereotype.Service;
 
 import com.epam.resourceservice.client.SongServiceClient;
 import com.epam.resourceservice.entity.Resource;
+import com.epam.resourceservice.exception.InvalidAudioFormatException;
 import com.epam.resourceservice.exception.InvalidCsvParameterException;
 import com.epam.resourceservice.exception.InvalidResourceIdException;
 import com.epam.resourceservice.exception.ResourceNotFoundException;
-import com.epam.resourceservice.mapper.SongMetadataMapper;
 import com.epam.resourceservice.repository.ResourceRepository;
-import com.epam.resourceservice.dto.SongMetadataDto;
-import org.apache.tika.metadata.Metadata;
 
 @Service
 public class ResourceService {
 
     private final ResourceRepository resourceRepository;
-    private final Mp3MetadataExtractor metadataExtractor;
     private final SongServiceClient songServiceClient;
-    private final SongMetadataMapper songMetadataMapper;
     private final S3StorageService s3StorageService;
 
     public ResourceService(ResourceRepository resourceRepository,
-                           Mp3MetadataExtractor metadataExtractor,
                            SongServiceClient songServiceClient,
-                           SongMetadataMapper songMetadataMapper,
                            S3StorageService s3StorageService) {
         this.resourceRepository = resourceRepository;
-        this.metadataExtractor = metadataExtractor;
         this.songServiceClient = songServiceClient;
-        this.songMetadataMapper = songMetadataMapper;
         this.s3StorageService = s3StorageService;
     }
 
     public int createResource(byte[] data) {
-        System.out.println("Received MP3 audio file, size: " + data.length + " bytes");
-
-        Metadata metadata = metadataExtractor.extract(data);
-        System.out.println("--- Parsed MP3 Metadata ---");
-        for (String name : metadata.names()) {
-            System.out.println(name + " = " + metadata.get(name));
+        if (data == null || data.length == 0) {
+            throw new InvalidAudioFormatException("The request body is invalid MP3: body is empty");
         }
-        System.out.println("---------------------------");
 
         String location = "resources/" + UUID.randomUUID() + ".mp3";
         s3StorageService.upload(location, data);
 
         Resource resource = new Resource(location);
         Resource savedResource = resourceRepository.save(resource);
-
-        try {
-            SongMetadataDto songMetadata = songMetadataMapper.toDto(savedResource.getId(), metadata);
-            songServiceClient.createSongMetadata(songMetadata);
-        } catch (Exception e) {
-            resourceRepository.delete(savedResource);
-            s3StorageService.delete(location);
-            throw e;
-        }
 
         return savedResource.getId();
     }
