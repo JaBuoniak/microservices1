@@ -31,7 +31,7 @@ services:
     build:
       context: .
       dockerfile: song-service/Dockerfile
-    container_name: song-service
+    # container_name: song-service # Docker creates its own container name for each instance
     restart: always
     environment:
       SPRING_DATASOURCE_URL: ${SONG_DB_URL}
