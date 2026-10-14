@@ -12,8 +12,9 @@ public class SongServiceClient {
 
     private final RestClient restClient;
 
-    public SongServiceClient(@Value("${song.service.url:http://localhost:8081/songs}") String songServiceUrl) {
-        this.restClient = RestClient.builder().baseUrl(songServiceUrl).build();
+    public SongServiceClient(RestClient.Builder restClientBuilder,
+            @Value("${song.service.url:http://song-service/songs}") String songServiceUrl) {
+        this.restClient = restClientBuilder.baseUrl(songServiceUrl).build();
     }
 
     public void createSongMetadata(SongMetadataDto metadata) {
