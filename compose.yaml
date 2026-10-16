@@ -72,6 +72,19 @@ services:
     ports:
       - "8761:8761"
 
-# volumes:   # Persisting database data between restarts is not enabled
+  localstack:
+    image: localstack/localstack:3.8
+    container_name: localstack
+    ports:
+      - "4566:4566"
+    environment:
+      - SERVICES=s3
+      - AWS_DEFAULT_REGION=us-east-1
+    volumes:
+      - localstack_data:/var/lib/localstack
+
+volumes:
+  localstack_data:
 #   resource_db_data:
 #   song_db_data:
+
