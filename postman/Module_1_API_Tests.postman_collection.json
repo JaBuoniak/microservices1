@@ -1,0 +1,1688 @@
+{
+	"info": {
+		"name": "Microservices Fundamentals: Module 1 API Tests",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"description": "API Tests for Module 1: Microservice architecture overview (Resource Service with Cloud Storage, decoupled upload, cascade delete, and Song Service)"
+	},
+	"item": [
+		{
+			"name": "Happy Path",
+			"item": [
+				{
+					"name": "Create Test Song Metadata (200)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Request URL matches expected structure\", function () {",
+									"    var requestUrl = pm.request.url.toString();",
+									"    var songServiceUrl = pm.variables.get(\"song_service_url\");",
+									"    var expectedBaseUrl = songServiceUrl + \"/songs\";",
+									"    pm.expect(requestUrl, `Expected URL to match ${expectedBaseUrl}`).to.equal(expectedBaseUrl);",
+									"});",
+									"",
+									"pm.test(\"Request body equals expected JSON object with dynamic test_id\", function () {",
+									"    var requestBody = JSON.parse(pm.request.body.raw);",
+									"    var expectedBody = {",
+									"        \"id\": parseInt(pm.variables.get(\"test_id\")),",
+									"        \"name\": \"We are the champions\",",
+									"        \"artist\": \"Queen\",",
+									"        \"album\": \"News of the world\",",
+									"        \"duration\": \"02:59\",",
+									"        \"year\": \"1977\"",
+									"    };",
+									"    pm.expect(requestBody, \"Request body does not match expected JSON object with dynamic test_id\")",
+									"        .to.deep.equal(expectedBody);",
+									"});",
+									"",
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.expect(pm.response.code, \"Expected status code to be 200\").to.equal(200);",
+									"});",
+									"",
+									"pm.test(\"Response is in JSON format\", function () {",
+									"    pm.expect(pm.response.headers.get(\"Content-Type\"), \"Expected Content-Type to be 'application/json'\")",
+									"        .to.equal(\"application/json\");",
+									"});",
+									"",
+									"pm.test(\"Response contains generated test_id\", function () {",
+									"    var responseBody = pm.response.text();",
+									"    pm.expect(responseBody, \"Expected response to contain test_id\")",
+									"        .to.include(pm.variables.get(\"test_id\"));",
+									"});",
+									"",
+									"pm.test(\"Response has 'id' field\", function () {",
+									"    var responseBody = pm.response.json();",
+									"    pm.expect(responseBody, \"Response should have 'id' property\").to.have.property(\"id\");",
+									"    pm.expect(responseBody.id, \"Response id should be a number\").to.be.a(\"number\");",
+									"});",
+									"",
+									"pm.test(\"Response contains only 'id' field as per specification\", function () {",
+									"    var responseBody = pm.response.json();",
+									"    var keys = Object.keys(responseBody);",
+									"    pm.expect(keys, \"Response should contain only 'id' field\").to.deep.equal([\"id\"]);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testId = Math.floor(100000 + Math.random() * 900000).toString();",
+									"pm.collectionVariables.set(\"test_id\", testId);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"id\": {{test_id}},\n    \"name\": \"We are the champions\",\n    \"artist\": \"Queen\",\n    \"album\": \"News of the world\",\n    \"duration\": \"02:59\",\n    \"year\": \"1977\"\n}"
+						},
+						"url": {
+							"raw": "{{song_service_url}}/songs",
+							"host": [
+								"{{song_service_url}}"
+							],
+							"path": [
+								"songs"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Upload Valid Mp3 Resource (200)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Request URL matches expected structure\", function () {",
+									"    var requestUrl = pm.request.url.toString();",
+									"    var resourceServiceUrl = pm.variables.get(\"resource_service_url\");",
+									"    var expectedBaseUrl = resourceServiceUrl + \"/resources\";",
+									"    pm.expect(requestUrl, `Expected URL to match ${expectedBaseUrl}`).to.equal(expectedBaseUrl);",
+									"});",
+									"",
+									"var jsonData = pm.response.json();",
+									"if (jsonData.id) {",
+									"    pm.collectionVariables.set(\"id\", jsonData.id);",
+									"}",
+									"",
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.expect(pm.response.code, \"Expected status code to be 200\").to.equal(200);",
+									"});",
+									"",
+									"pm.test(\"Response contains 'id' field\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData, \"Expected response to contain 'id' field\").to.have.property(\"id\");",
+									"});",
+									"",
+									"pm.test(\"Response contains only 'id' field\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(Object.keys(jsonData), \"Expected response to contain only 'id' field\").to.deep.equal([\"id\"]);",
+									"});",
+									"",
+									"pm.test(\"Response 'id' is a positive integer as per specification\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.id, \"Response id should be a number\").to.be.a(\"number\");",
+									"    pm.expect(jsonData.id, \"Response id should be a positive integer\").to.be.above(0);",
+									"    pm.expect(Number.isInteger(jsonData.id), \"Response id should be an integer\").to.be.true;",
+									"});",
+									"",
+									"pm.test(\"Response format matches specification\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(Object.keys(jsonData).length, \"Response should have exactly 1 field\").to.equal(1);",
+									"    pm.expect(jsonData, \"Response should be in format { id: number }\").to.have.all.keys(\"id\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "audio/mpeg"
+							}
+						],
+						"body": {
+							"mode": "file",
+							"file": {
+								"src": "valid-sample-with-required-tags.mp3"
+							}
+						},
+						"url": {
+							"raw": "{{resource_service_url}}/resources",
+							"host": [
+								"{{resource_service_url}}"
+							],
+							"path": [
+								"resources"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Existing Resource (200)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Request URL matches expected structure\", function () {",
+									"    var requestUrl = pm.request.url.toString();",
+									"    var expectedBaseUrl = pm.variables.get(\"resource_service_url\") + \"/resources/\";",
+									"    pm.expect(requestUrl.startsWith(expectedBaseUrl), \"Expected URL to start with the base resource service URL\").to.be.true;",
+									"});",
+									"",
+									"pm.test(\"Path variable 'id' is dynamic\", function () {",
+									"    var requestUrl = pm.request.url.toString();",
+									"    var dynamicId = pm.variables.get(\"id\");",
+									"    var expectedUrl = pm.variables.get(\"resource_service_url\") + \"/resources/\" + dynamicId;",
+									"    pm.expect(requestUrl, \"Expected request URL to include dynamic 'id'\").to.equal(expectedUrl);",
+									"});",
+									"",
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.expect(pm.response.code, \"Expected status code to be 200\").to.equal(200);",
+									"});",
+									"",
+									"pm.test(\"Content-Type is 'audio/mpeg'\", function () {",
+									"    pm.expect(pm.response.headers.get(\"Content-Type\"), \"Expected Content-Type to be 'audio/mpeg'\").to.equal(\"audio/mpeg\");",
+									"});",
+									"",
+									"pm.test(\"Content-Length header is present\", function () {",
+									"    var contentLength = pm.response.headers.get(\"Content-Length\");",
+									"    pm.expect(contentLength, \"Expected Content-Length header to be present\").to.not.be.null;",
+									"});",
+									"",
+									"pm.test(\"Content-Length is greater than zero\", function () {",
+									"    var contentLength = pm.response.headers.get(\"Content-Length\");",
+									"    pm.expect(parseInt(contentLength), \"Expected Content-Length to be greater than zero\").to.be.above(0);",
+									"});",
+									"",
+									"pm.test(\"Response body contains binary data\", function () {",
+									"    pm.expect(pm.response, \"Response should have a body\").to.have.property(\"stream\");",
+									"    pm.expect(pm.response.stream.length, \"Response body should not be empty\").to.be.above(0);",
+									"});",
+									"",
+									"pm.test(\"Response headers match specification\", function () {",
+									"    pm.expect(pm.response.headers.get(\"Content-Type\"), \"Content-Type must be audio/mpeg\").to.equal(\"audio/mpeg\");",
+									"    var contentLength = parseInt(pm.response.headers.get(\"Content-Length\"));",
+									"    pm.expect(contentLength, \"Content-Length must be positive\").to.be.a(\"number\").and.to.be.above(0);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{resource_service_url}}/resources/{{id}}",
+							"host": [
+								"{{resource_service_url}}"
+							],
+							"path": [
+								"resources",
+								"{{id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Existing Song Metadata (200)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Request URL matches expected structure\", function () {",
+									"    var requestUrl = pm.request.url.toString();",
+									"    var expectedBaseUrl = pm.variables.get(\"song_service_url\") + \"/songs/\";",
+									"    pm.expect(requestUrl.startsWith(expectedBaseUrl), \"Expected URL to start with the base song service URL\").to.be.true;",
+									"});",
+									"",
+									"pm.test(\"Path variable 'id' matches test_id\", function () {",
+									"    var requestUrl = pm.request.url.toString();",
+									"    var testId = pm.variables.get(\"test_id\");",
+									"    var expectedUrl = pm.variables.get(\"song_service_url\") + \"/songs/\" + testId;",
+									"    pm.expect(requestUrl, \"Expected request URL to include test_id\").to.equal(expectedUrl);",
+									"});",
+									"",
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.expect(pm.response.code, \"Expected status code to be 200\").to.equal(200);",
+									"});",
+									"",
+									"pm.test(\"Response is in JSON format\", function () {",
+									"    pm.expect(pm.response.headers.get(\"Content-Type\"), \"Expected Content-Type to be 'application/json'\")",
+									"      .to.equal(\"application/json\");",
+									"});",
+									"",
+									"pm.test(\"Response contains 'id' field and it matches test_id\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData, \"Expected response to contain 'id' field\").to.have.property(\"id\").and.to.not.be.null;",
+									"    pm.expect(jsonData.id).to.equal(parseInt(pm.variables.get(\"test_id\")));",
+									"});",
+									"",
+									"pm.test(\"Response contains 'name' field and it is not null\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData, \"Expected response to contain 'name' field\").to.have.property(\"name\").and.to.not.be.null;",
+									"});",
+									"",
+									"pm.test(\"Response contains 'artist' field and it is not null\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData, \"Expected response to contain 'artist' field\").to.have.property(\"artist\").and.to.not.be.null;",
+									"});",
+									"",
+									"pm.test(\"Response contains 'album' field and it is not null\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData, \"Expected response to contain 'album' field\").to.have.property(\"album\").and.to.not.be.null;",
+									"});",
+									"",
+									"pm.test(\"Response contains 'duration' field and it is not null\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData, \"Expected response to contain 'duration' field\").to.have.property(\"duration\").and.to.not.be.null;",
+									"});",
+									"",
+									"pm.test(\"Duration is in mm:ss format with leading zeros\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    var durationPattern = /^\\d{2}:\\d{2}$/;",
+									"    pm.expect(jsonData.duration, `Expected duration '${jsonData.duration}' to match mm:ss format`).to.match(durationPattern);",
+									"});",
+									"",
+									"pm.test(\"Response contains 'year' field and it is not null\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData, \"Expected response to contain 'year' field\").to.have.property(\"year\").and.to.not.be.null;",
+									"});",
+									"",
+									"pm.test(\"Response contains exactly 6 fields as per specification\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    var expectedFields = [\"id\", \"name\", \"artist\", \"album\", \"duration\", \"year\"];",
+									"    var actualFields = Object.keys(jsonData).sort();",
+									"    pm.expect(actualFields).to.deep.equal(expectedFields.sort());",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{song_service_url}}/songs/{{test_id}}",
+							"host": [
+								"{{song_service_url}}"
+							],
+							"path": [
+								"songs",
+								"{{test_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Resources With Metadata (200)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Request URL matches expected structure\", function () {",
+									"    var requestUrl = pm.request.url.toString();",
+									"    var resourceServiceUrl = pm.variables.get(\"resource_service_url\");",
+									"    var dynamicId = pm.variables.get(\"id\");",
+									"    var expectedUrl = resourceServiceUrl + \"/resources?id=\" + dynamicId + \",101,102\";",
+									"    pm.expect(requestUrl, \"Expected request URL to match the expected structure\").to.equal(expectedUrl);",
+									"});",
+									"",
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.expect(pm.response.code, \"Expected status code to be 200\").to.equal(200);",
+									"});",
+									"",
+									"pm.test(\"Response contains 'ids' field\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData, \"Expected response to contain 'ids' field\").to.have.property(\"ids\");",
+									"});",
+									"",
+									"pm.test(\"'ids' field is an array\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.ids, \"Expected 'ids' to be an array\").to.be.an(\"array\");",
+									"});",
+									"",
+									"pm.test(\"Response 'ids' array contains only the dynamic id that exists\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    var dynamicId = parseInt(pm.variables.get(\"id\"));",
+									"    pm.expect(jsonData.ids, \"ids array should contain the dynamic id\").to.include(dynamicId);",
+									"    pm.expect(jsonData.ids.length, \"ids array should contain only 1 element (dynamic id)\").to.equal(1);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{resource_service_url}}/resources?id={{id}},101,102",
+							"host": [
+								"{{resource_service_url}}"
+							],
+							"path": [
+								"resources"
+							],
+							"query": [
+								{
+									"key": "id",
+									"value": "{{id}},101,102"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Deleted Resource (404)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 404\", function () {",
+									"    pm.expect(pm.response.code, \"Expected status code to be 404\").to.equal(404);",
+									"});",
+									"",
+									"pm.test(\"Response is in JSON format\", function () {",
+									"    pm.expect(pm.response.headers.get(\"Content-Type\"), \"Expected Content-Type to be 'application/json'\")",
+									"        .to.equal(\"application/json\");",
+									"});",
+									"",
+									"pm.test(\"Response has required error fields as per specification\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData, \"Response should have 'errorMessage' field\").to.have.property(\"errorMessage\");",
+									"    pm.expect(jsonData, \"Response should have 'errorCode' field\").to.have.property(\"errorCode\");",
+									"    pm.expect(jsonData.errorCode, \"errorCode should be '404'\").to.equal(\"404\");",
+									"});",
+									"",
+									"pm.test(\"Error message matches specification format: 'Resource with ID=X not found'\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    var dynamicId = pm.variables.get(\"id\");",
+									"    var expectedMessage = `Resource with ID=${dynamicId} not found`;",
+									"    pm.expect(jsonData.errorMessage, \"Error message should match specification format\").to.equal(expectedMessage);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{resource_service_url}}/resources/{{id}}",
+							"host": [
+								"{{resource_service_url}}"
+							],
+							"path": [
+								"resources",
+								"{{id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Deleted Song Metadata (404)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 404\", function () {",
+									"    pm.expect(pm.response.code, \"Expected status code to be 404\").to.equal(404);",
+									"});",
+									"",
+									"pm.test(\"Response has required error fields as per specification\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData, \"Response should have 'errorMessage' field\").to.have.property(\"errorMessage\");",
+									"    pm.expect(jsonData, \"Response should have 'errorCode' field\").to.have.property(\"errorCode\");",
+									"    pm.expect(jsonData.errorCode, \"errorCode should be '404'\").to.equal(\"404\");",
+									"});",
+									"",
+									"pm.test(\"Error message matches specification format: 'Song metadata for ID=X not found'\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    var dynamicId = pm.variables.get(\"id\");",
+									"    var expectedMessage = `Song metadata for ID=${dynamicId} not found`;",
+									"    pm.expect(jsonData.errorMessage, \"Error message should match specification format\").to.equal(expectedMessage);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{song_service_url}}/songs/{{id}}",
+							"host": [
+								"{{song_service_url}}"
+							],
+							"path": [
+								"songs",
+								"{{id}}"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Error Cases",
+			"item": [
+				{
+					"name": "Resource Service",
+					"item": [
+						{
+							"name": "Upload Invalid Resource (400)",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 400\", function () {",
+											"    pm.expect(pm.response.code, \"Expected status code to be 400\").to.equal(400);",
+											"});",
+											"",
+											"pm.test(\"Response is in JSON format\", function () {",
+											"    pm.expect(pm.response.headers.get(\"Content-Type\"), \"Expected Content-Type to be 'application/json'\")",
+											"      .to.equal(\"application/json\");",
+											"});",
+											"",
+											"pm.test(\"Response has required error fields as per specification\", function () {",
+											"    var jsonData = pm.response.json();",
+											"    pm.expect(jsonData, \"Response should have 'errorMessage' field\").to.have.property(\"errorMessage\");",
+											"    pm.expect(jsonData, \"Response should have 'errorCode' field\").to.have.property(\"errorCode\");",
+											"    pm.expect(jsonData.errorCode, \"errorCode should be '400'\").to.equal(\"400\");",
+											"});",
+											"",
+											"pm.test(\"Error message exactly matches specification format\", function () {",
+											"    var jsonData = pm.response.json();",
+											"    var expectedMessage = \"Invalid file format: application/json. Only MP3 files are allowed\";",
+											"    pm.expect(jsonData.errorMessage, \"Error message should match specification\").to.equal(expectedMessage);",
+											"});"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "invalid data"
+								},
+								"url": {
+									"raw": "{{resource_service_url}}/resources",
+									"host": [
+										"{{resource_service_url}}"
+									],
+									"path": [
+										"resources"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Get Non-existent Resource (404)",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 404\", function () {",
+											"    pm.expect(pm.response.code, \"Expected status code to be 404\").to.equal(404);",
+											"});",
+											"",
+											"pm.test(\"Response has required error fields as per specification\", function () {",
+											"    var jsonData = pm.response.json();",
+											"    pm.expect(jsonData, \"Response should have 'errorMessage' field\").to.have.property(\"errorMessage\");",
+											"    pm.expect(jsonData, \"Response should have 'errorCode' field\").to.have.property(\"errorCode\");",
+											"    pm.expect(jsonData.errorCode, \"errorCode should be '404'\").to.equal(\"404\");",
+											"});",
+											"",
+											"pm.test(\"Error message exactly matches specification format\", function () {",
+											"    var jsonData = pm.response.json();",
+											"    var expectedMessage = \"Resource with ID=99999 not found\";",
+											"    pm.expect(jsonData.errorMessage, \"Error message should match specification\").to.equal(expectedMessage);",
+											"});"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{resource_service_url}}/resources/99999",
+									"host": [
+										"{{resource_service_url}}"
+									],
+									"path": [
+										"resources",
+										"99999"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Get Invalid ID - Letters (400)",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 400\", function () {",
+											"    pm.expect(pm.response.code, \"Expected status code to be 400\").to.equal(400);",
+											"});",
+											"",
+											"pm.test(\"Error message exactly matches specification format\", function () {",
+											"    var jsonData = pm.response.json();",
+											"    var expectedMessage = \"Invalid value 'ABC' for ID. Must be a positive integer\";",
+											"    pm.expect(jsonData.errorMessage, \"Error message should match specification\").to.equal(expectedMessage);",
+											"});"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{resource_service_url}}/resources/ABC",
+									"host": [
+										"{{resource_service_url}}"
+									],
+									"path": [
+										"resources",
+										"ABC"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Get Invalid ID - Decimal (400)",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 400\", function () {",
+											"    pm.expect(pm.response.code, \"Expected status code to be 400\").to.equal(400);",
+											"});",
+											"",
+											"pm.test(\"Error message exactly matches specification format\", function () {",
+											"    var jsonData = pm.response.json();",
+											"    var expectedMessage = \"Invalid value '1.1' for ID. Must be a positive integer\";",
+											"    pm.expect(jsonData.errorMessage, \"Error message should match specification\").to.equal(expectedMessage);",
+											"});"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{resource_service_url}}/resources/1.1",
+									"host": [
+										"{{resource_service_url}}"
+									],
+									"path": [
+										"resources",
+										"1.1"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Get Invalid ID - Negative (400)",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 400\", function () {",
+											"    pm.expect(pm.response.code, \"Expected status code to be 400\").to.equal(400);",
+											"});",
+											"",
+											"pm.test(\"Error message exactly matches specification format\", function () {",
+											"    var jsonData = pm.response.json();",
+											"    var expectedMessage = \"Invalid value '-1' for ID. Must be a positive integer\";",
+											"    pm.expect(jsonData.errorMessage, \"Error message should match specification\").to.equal(expectedMessage);",
+											"});"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{resource_service_url}}/resources/-1",
+									"host": [
+										"{{resource_service_url}}"
+									],
+									"path": [
+										"resources",
+										"-1"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Get Invalid ID - Zero (400)",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 400\", function () {",
+											"    pm.expect(pm.response.code, \"Expected status code to be 400\").to.equal(400);",
+											"});",
+											"",
+											"pm.test(\"Error message exactly matches specification format\", function () {",
+											"    var jsonData = pm.response.json();",
+											"    var expectedMessage = \"Invalid value '0' for ID. Must be a positive integer\";",
+											"    pm.expect(jsonData.errorMessage, \"Error message should match specification\").to.equal(expectedMessage);",
+											"});"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{resource_service_url}}/resources/0",
+									"host": [
+										"{{resource_service_url}}"
+									],
+									"path": [
+										"resources",
+										"0"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Delete Non-existent Resource (200)",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.expect(pm.response.code, \"Expected status code to be 200\").to.equal(200);",
+											"});",
+											"",
+											"pm.test(\"Response has 'ids' field which is an empty array\", function () {",
+											"    var responseBody = pm.response.json();",
+											"    pm.expect(responseBody, \"Response should have 'ids' field\").to.have.property(\"ids\");",
+											"    pm.expect(responseBody.ids, \"ids should be an array\").to.be.an(\"array\");",
+											"    pm.expect(responseBody.ids, \"ids array should be empty for non-existent resources\").to.be.empty;",
+											"});"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{resource_service_url}}/resources?id=99999",
+									"host": [
+										"{{resource_service_url}}"
+									],
+									"path": [
+										"resources"
+									],
+									"query": [
+										{
+											"key": "id",
+											"value": "99999"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Delete Invalid CSV - Letters (400)",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 400\", function () {",
+											"    pm.expect(pm.response.code, \"Expected status code to be 400\").to.equal(400);",
+											"});",
+											"",
+											"pm.test(\"Error message exactly matches specification format\", function () {",
+											"    var jsonData = pm.response.json();",
+											"    var expectedMessage = \"Invalid ID format: 'V'. Only positive integers are allowed\";",
+											"    pm.expect(jsonData.errorMessage, \"Error message should match specification\").to.equal(expectedMessage);",
+											"});"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{resource_service_url}}/resources?id=1,2,3,4,V",
+									"host": [
+										"{{resource_service_url}}"
+									],
+									"path": [
+										"resources"
+									],
+									"query": [
+										{
+											"key": "id",
+											"value": "1,2,3,4,V"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Delete Invalid CSV - Length (400)",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 400\", function () {",
+											"    pm.expect(pm.response.code, \"Expected status code to be 400\").to.equal(400);",
+											"});",
+											"",
+											"pm.test(\"Error message exactly matches specification format\", function () {",
+											"    var jsonData = pm.response.json();",
+											"    var expectedMessage = \"CSV string is too long: received 208 characters, maximum allowed is 200\";",
+											"    pm.expect(jsonData.errorMessage, \"Error message should match specification\").to.equal(expectedMessage);",
+											"});"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{resource_service_url}}/resources?id=2147483647,2147483646,2147483645,2147483644,2147483643,2147483642,2147483641,2147483640,2147483639,2147483638,2147483637,2147483636,2147483635,2147483634,2147483633,2147483632,2147483631,2147483630,2147483629",
+									"host": [
+										"{{resource_service_url}}"
+									],
+									"path": [
+										"resources"
+									],
+									"query": [
+										{
+											"key": "id",
+											"value": "2147483647,2147483646,2147483645,2147483644,2147483643,2147483642,2147483641,2147483640,2147483639,2147483638,2147483637,2147483636,2147483635,2147483634,2147483633,2147483632,2147483631,2147483630,2147483629"
+										}
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Song Service",
+					"item": [
+						{
+							"name": "Create Song Metadata - Invalid Fields - Duration 02:77, Year 01977 (400)",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 400\", function () {",
+											"    pm.expect(pm.response.code, \"Expected status code to be 400\").to.equal(400);",
+											"});",
+											"",
+											"pm.test(\"Error message exactly matches specification\", function () {",
+											"    var jsonData = pm.response.json();",
+											"    pm.expect(jsonData.errorMessage, \"Error message should be 'Validation error'\").to.equal(\"Validation error\");",
+											"});",
+											"",
+											"pm.test(\"Details contains 'duration' validation error matching specification\", function () {",
+											"    var jsonData = pm.response.json();",
+											"    pm.expect(jsonData.details, \"Details should have 'duration' field\").to.have.property(\"duration\");",
+											"    pm.expect(jsonData.details.duration, \"Duration error message should match specification\")",
+											"        .to.equal(\"Duration must be in mm:ss format with leading zeros\");",
+											"});",
+											"",
+											"pm.test(\"Details contains 'year' validation error matching specification\", function () {",
+											"    var jsonData = pm.response.json();",
+											"    pm.expect(jsonData.details, \"Details should have 'year' field\").to.have.property(\"year\");",
+											"    pm.expect(jsonData.details.year, \"Year error message should match specification\")",
+											"        .to.equal(\"Year must be between 1900 and 2099\");",
+											"});"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"id\": 102,\n    \"name\": \"We are the champions\",\n    \"artist\": \"Queen\",\n    \"album\": \"News of the world\",\n    \"duration\": \"02:77\",\n    \"year\": \"01977\"\n}"
+								},
+								"url": {
+									"raw": "{{song_service_url}}/songs",
+									"host": [
+										"{{song_service_url}}"
+									],
+									"path": [
+										"songs"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Create Song Metadata - Invalid Fields - Duration 0299 (400)",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 400\", function () {",
+											"    pm.expect(pm.response.code, \"Expected status code to be 400\").to.equal(400);",
+											"});",
+											"",
+											"pm.test(\"Details contains only 'duration' validation error matching specification\", function () {",
+											"    var jsonData = pm.response.json();",
+											"    pm.expect(jsonData.details, \"Details should have 'duration' field\").to.have.property(\"duration\");",
+											"    pm.expect(jsonData.details.duration, \"Duration error message should match specification\")",
+											"        .to.equal(\"Duration must be in mm:ss format with leading zeros\");",
+											"});"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"id\": 102,\n    \"name\": \"We are the champions\",\n    \"artist\": \"Queen\",\n    \"album\": \"News of the world\",\n    \"duration\": \"0299\",\n    \"year\": \"1977\"\n}"
+								},
+								"url": {
+									"raw": "{{song_service_url}}/songs",
+									"host": [
+										"{{song_service_url}}"
+									],
+									"path": [
+										"songs"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Create Song Metadata - Invalid Fields - Duration 35 (400)",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 400\", function () {",
+											"    pm.expect(pm.response.code, \"Expected status code to be 400\").to.equal(400);",
+											"});",
+											"",
+											"pm.test(\"Details contains only 'duration' validation error matching specification\", function () {",
+											"    var jsonData = pm.response.json();",
+											"    pm.expect(jsonData.details, \"Details should have 'duration' field\").to.have.property(\"duration\");",
+											"    pm.expect(jsonData.details.duration, \"Duration error message should match specification\")",
+											"        .to.equal(\"Duration must be in mm:ss format with leading zeros\");",
+											"});"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"id\": 102,\n    \"name\": \"We are the champions\",\n    \"artist\": \"Queen\",\n    \"album\": \"News of the world\",\n    \"duration\": \"35\",\n    \"year\": \"1977\"\n}"
+								},
+								"url": {
+									"raw": "{{song_service_url}}/songs",
+									"host": [
+										"{{song_service_url}}"
+									],
+									"path": [
+										"songs"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Create Song Metadata - Invalid Fields - Year 1 (400)",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 400\", function () {",
+											"    pm.expect(pm.response.code, \"Expected status code to be 400\").to.equal(400);",
+											"});",
+											"",
+											"pm.test(\"Details contains only 'year' validation error matching specification\", function () {",
+											"    var details = pm.response.json().details;",
+											"    pm.expect(details).to.have.property(\"year\");",
+											"    pm.expect(details.year).to.equal(\"Year must be between 1900 and 2099\");",
+											"});"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"id\": 102,\n    \"name\": \"We are the champions\",\n    \"artist\": \"Queen\",\n    \"album\": \"News of the world\",\n    \"duration\": \"02:59\",\n    \"year\": \"1\"\n}"
+								},
+								"url": {
+									"raw": "{{song_service_url}}/songs",
+									"host": [
+										"{{song_service_url}}"
+									],
+									"path": [
+										"songs"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Create Song Metadata - Invalid Fields - All Empty (400)",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 400\", function () {",
+											"    pm.expect(pm.response.code, \"Expected status code to be 400\").to.equal(400);",
+											"});",
+											"",
+											"pm.test(\"Details contains all 5 required field errors as per specification\", function () {",
+											"    var details = pm.response.json().details;",
+											"    var expectedErrors = {",
+											"        \"duration\": \"Duration must be in mm:ss format with leading zeros\",",
+											"        \"year\": \"Year must be between 1900 and 2099\",",
+											"        \"artist\": \"Artist name must be between 1 and 100 characters\",",
+											"        \"album\": \"Album name must be between 1 and 100 characters\",",
+											"        \"name\": \"Song name must be between 1 and 100 characters\"",
+											"    };",
+											"    pm.expect(Object.keys(details).length).to.equal(5);",
+											"    for (var field in expectedErrors) {",
+											"        pm.expect(details[field]).to.equal(expectedErrors[field]);",
+											"    }",
+											"});"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"id\": 102,\n    \"name\": \"\",\n    \"artist\": \"\",\n    \"album\": \"\",\n    \"duration\": \"\",\n    \"year\": \"\"\n}"
+								},
+								"url": {
+									"raw": "{{song_service_url}}/songs",
+									"host": [
+										"{{song_service_url}}"
+									],
+									"path": [
+										"songs"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Create Song Metadata - Missing Fields - Name (400)",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 400\", function () {",
+											"    pm.expect(pm.response.code, \"Expected status code to be 400\").to.equal(400);",
+											"});",
+											"",
+											"pm.test(\"Details contains only 'name' validation error matching specification\", function () {",
+											"    var details = pm.response.json().details;",
+											"    pm.expect(details).to.have.property(\"name\");",
+											"    pm.expect(details.name).to.equal(\"Song name is required\");",
+											"});"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"id\": 103,\n    \"artist\": \"Queen\",\n    \"album\": \"News of the world\",\n    \"duration\": \"02:59\",\n    \"year\": \"1977\"\n}"
+								},
+								"url": {
+									"raw": "{{song_service_url}}/songs",
+									"host": [
+										"{{song_service_url}}"
+									],
+									"path": [
+										"songs"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Create Song Metadata - Missing Fields - All Except Id (400)",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 400\", function () {",
+											"    pm.expect(pm.response.code, \"Expected status code to be 400\").to.equal(400);",
+											"});",
+											"",
+											"pm.test(\"Details contains all 5 'required' field errors as per specification\", function () {",
+											"    var details = pm.response.json().details;",
+											"    var expectedErrors = {",
+											"        \"duration\": \"Duration is required\",",
+											"        \"artist\": \"Artist name is required\",",
+											"        \"year\": \"Year is required\",",
+											"        \"album\": \"Album name is required\",",
+											"        \"name\": \"Song name is required\"",
+											"    };",
+											"    pm.expect(Object.keys(details).length).to.equal(5);",
+											"    for (var field in expectedErrors) {",
+											"        pm.expect(details[field]).to.equal(expectedErrors[field]);",
+											"    }",
+											"});"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"id\": 102\n}"
+								},
+								"url": {
+									"raw": "{{song_service_url}}/songs",
+									"host": [
+										"{{song_service_url}}"
+									],
+									"path": [
+										"songs"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Create Song Metadata Before Conflict Test (200)",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.expect(pm.response.code, \"Expected status code to be 200\").to.equal(200);",
+											"});",
+											"var jsonData = pm.response.json();",
+											"pm.expect(jsonData).to.have.property(\"id\");"
+										],
+										"type": "text/javascript"
+									}
+								},
+								{
+									"listen": "prerequest",
+									"script": {
+										"exec": [
+											"let conflictId = Math.floor(100000 + Math.random() * 900000).toString();",
+											"pm.collectionVariables.set(\"conflict_id\", conflictId);"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"id\": {{conflict_id}},\n    \"name\": \"We are the champions\",\n    \"artist\": \"Queen\",\n    \"album\": \"News of the world\",\n    \"duration\": \"02:59\",\n    \"year\": \"1977\"\n}"
+								},
+								"url": {
+									"raw": "{{song_service_url}}/songs",
+									"host": [
+										"{{song_service_url}}"
+									],
+									"path": [
+										"songs"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Create Song Metadata - Already Exists (409)",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 409\", function () {",
+											"    pm.expect(pm.response.code, \"Expected status code to be 409\").to.equal(409);",
+											"});",
+											"",
+											"pm.test(\"Response is in JSON format\", function () {",
+											"    pm.expect(pm.response.headers.get(\"Content-Type\"), \"Expected Content-Type to be 'application/json'\")",
+											"      .to.equal(\"application/json\");",
+											"});",
+											"",
+											"pm.test(\"Response has required error fields as per specification\", function () {",
+											"    var jsonData = pm.response.json();",
+											"    pm.expect(jsonData).to.have.property(\"errorMessage\");",
+											"    pm.expect(jsonData).to.have.property(\"errorCode\");",
+											"    pm.expect(jsonData.errorCode).to.equal(\"409\");",
+											"});",
+											"",
+											"pm.test(\"Error message exactly matches specification format\", function () {",
+											"    var jsonData = pm.response.json();",
+											"    var dynamicId = pm.collectionVariables.get(\"conflict_id\");",
+											"    var expectedMessage = `Metadata for resource ID=${dynamicId} already exists`;",
+											"    pm.expect(jsonData.errorMessage).to.equal(expectedMessage);",
+											"});"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"id\": {{conflict_id}},\n    \"name\": \"We are the champions\",\n    \"artist\": \"Queen\",\n    \"album\": \"News of the world\",\n    \"duration\": \"02:59\",\n    \"year\": \"1977\"\n}"
+								},
+								"url": {
+									"raw": "{{song_service_url}}/songs",
+									"host": [
+										"{{song_service_url}}"
+									],
+									"path": [
+										"songs"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Get Non-Existent Song Metadata (404)",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 404\", function () {",
+											"    pm.expect(pm.response.code, \"Expected status code to be 404\").to.equal(404);",
+											"});",
+											"",
+											"pm.test(\"Error message exactly matches specification format\", function () {",
+											"    var jsonData = pm.response.json();",
+											"    var expectedMessage = \"Song metadata for ID=99999 not found\";",
+											"    pm.expect(jsonData.errorMessage).to.equal(expectedMessage);",
+											"});"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{song_service_url}}/songs/99999",
+									"host": [
+										"{{song_service_url}}"
+									],
+									"path": [
+										"songs",
+										"99999"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Get Song Metadata - Invalid ID - Letters (400)",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 400\", function () {",
+											"    pm.expect(pm.response.code, \"Expected status code to be 400\").to.equal(400);",
+											"});",
+											"",
+											"pm.test(\"Error message exactly matches specification format\", function () {",
+											"    var jsonData = pm.response.json();",
+											"    var expectedMessage = \"Invalid value 'ABC' for ID. Must be a positive integer\";",
+											"    pm.expect(jsonData.errorMessage, \"Error message should match specification\").to.equal(expectedMessage);",
+											"});"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{song_service_url}}/songs/ABC",
+									"host": [
+										"{{song_service_url}}"
+									],
+									"path": [
+										"songs",
+										"ABC"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Get Song Metadata - Invalid ID - Decimal (400)",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 400\", function () {",
+											"    pm.expect(pm.response.code, \"Expected status code to be 400\").to.equal(400);",
+											"});",
+											"",
+											"pm.test(\"Error message exactly matches specification format\", function () {",
+											"    var jsonData = pm.response.json();",
+											"    var expectedMessage = \"Invalid value '1.1' for ID. Must be a positive integer\";",
+											"    pm.expect(jsonData.errorMessage, \"Error message should match specification\").to.equal(expectedMessage);",
+											"});"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{song_service_url}}/songs/1.1",
+									"host": [
+										"{{song_service_url}}"
+									],
+									"path": [
+										"songs",
+										"1.1"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Get Song Metadata - Invalid ID - Negative (400)",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 400\", function () {",
+											"    pm.expect(pm.response.code, \"Expected status code to be 400\").to.equal(400);",
+											"});",
+											"",
+											"pm.test(\"Error message exactly matches specification format\", function () {",
+											"    var jsonData = pm.response.json();",
+											"    var expectedMessage = \"Invalid value '-1' for ID. Must be a positive integer\";",
+											"    pm.expect(jsonData.errorMessage, \"Error message should match specification\").to.equal(expectedMessage);",
+											"});"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{song_service_url}}/songs/-1",
+									"host": [
+										"{{song_service_url}}"
+									],
+									"path": [
+										"songs",
+										"-1"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Get Song Metadata - Invalid ID - Zero (400)",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 400\", function () {",
+											"    pm.expect(pm.response.code, \"Expected status code to be 400\").to.equal(400);",
+											"});",
+											"",
+											"pm.test(\"Error message exactly matches specification format\", function () {",
+											"    var jsonData = pm.response.json();",
+											"    var expectedMessage = \"Invalid value '0' for ID. Must be a positive integer\";",
+											"    pm.expect(jsonData.errorMessage, \"Error message should match specification\").to.equal(expectedMessage);",
+											"});"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{song_service_url}}/songs/0",
+									"host": [
+										"{{song_service_url}}"
+									],
+									"path": [
+										"songs",
+										"0"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Delete Non-existent Song Metadata (200)",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.expect(pm.response.code, \"Expected status code to be 200\").to.equal(200);",
+											"});",
+											"",
+											"pm.test(\"Response has 'ids' field which is an empty array as per specification\", function () {",
+											"    var responseBody = pm.response.json();",
+											"    pm.expect(responseBody).to.have.property(\"ids\");",
+											"    pm.expect(responseBody.ids).to.be.an(\"array\");",
+											"    pm.expect(responseBody.ids).to.be.empty;",
+											"});"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{song_service_url}}/songs?id=99999",
+									"host": [
+										"{{song_service_url}}"
+									],
+									"path": [
+										"songs"
+									],
+									"query": [
+										{
+											"key": "id",
+											"value": "99999"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Delete Invalid CSV - Letters (400)",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 400\", function () {",
+											"    pm.expect(pm.response.code, \"Expected status code to be 400\").to.equal(400);",
+											"});",
+											"",
+											"pm.test(\"Error message exactly matches specification format\", function () {",
+											"    var jsonData = pm.response.json();",
+											"    var expectedMessage = \"Invalid ID format: 'V'. Only positive integers are allowed\";",
+											"    pm.expect(jsonData.errorMessage, \"Error message should match specification\").to.equal(expectedMessage);",
+											"});"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{song_service_url}}/songs?id=1,2,3,4,V",
+									"host": [
+										"{{song_service_url}}"
+									],
+									"path": [
+										"songs"
+									],
+									"query": [
+										{
+											"key": "id",
+											"value": "1,2,3,4,V"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Delete Invalid CSV - Length (400)",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 400\", function () {",
+											"    pm.expect(pm.response.code, \"Expected status code to be 400\").to.equal(400);",
+											"});",
+											"",
+											"pm.test(\"Error message exactly matches specification format\", function () {",
+											"    var jsonData = pm.response.json();",
+											"    var expectedMessage = \"CSV string is too long: received 208 characters, maximum allowed is 200\";",
+											"    pm.expect(jsonData.errorMessage, \"Error message should match specification\").to.equal(expectedMessage);",
+											"});"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{song_service_url}}/songs?id=2147483647,2147483646,2147483645,2147483644,2147483643,2147483642,2147483641,2147483640,2147483639,2147483638,2147483637,2147483636,2147483635,2147483634,2147483633,2147483632,2147483631,2147483630,2147483629",
+									"host": [
+										"{{song_service_url}}"
+									],
+									"path": [
+										"songs"
+									],
+									"query": [
+										{
+											"key": "id",
+											"value": "2147483647,2147483646,2147483645,2147483644,2147483643,2147483642,2147483641,2147483640,2147483639,2147483638,2147483637,2147483636,2147483635,2147483634,2147483633,2147483632,2147483631,2147483630,2147483629"
+										}
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "id",
+			"value": "1",
+			"type": "string"
+		},
+		{
+			"key": "test_id",
+			"value": "100000",
+			"type": "string"
+		},
+		{
+			"key": "conflict_id",
+			"value": "100001",
+			"type": "string"
+		},
+		{
+			"key": "resource_service_url",
+			"value": "http://localhost:8080",
+			"type": "string"
+		},
+		{
+			"key": "song_service_url",
+			"value": "http://localhost:8081",
+			"type": "string"
+		}
+	]
+}
