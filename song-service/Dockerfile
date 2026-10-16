@@ -4,23 +4,25 @@
 #   docker run -d --name song-service-app --network microservices1_default -p 8081:8081 -e SPRING_DATASOURCE_URL=jdbc:postgresql://song-db:5432/song_db song-service
 
 # Build stage
-FROM gradle:8.5-jdk17-alpine AS build
+FROM gradle:8.14-jdk17-alpine AS build
 WORKDIR /app
 
 # Copy configuration files
-COPY gradlew .
+# COPY gradlew .
 COPY gradle ./gradle
 COPY build.gradle settings.gradle ./
 COPY song-service/build.gradle ./song-service/
 
 # Cache dependencies
-RUN ./gradlew :song-service:dependencies --no-daemon
+# RUN ./gradlew :song-service:dependencies --no-daemon
+RUN gradle :song-service:dependencies --no-daemon
 
 # Copy source code
 COPY song-service/src ./song-service/src
 
 # Build JAR
-RUN ./gradlew :song-service:assemble --no-daemon -x test
+# RUN ./gradlew :song-service:assemble --no-daemon -x test
+RUN gradle :song-service:assemble --no-daemon
 
 # Production Stage 
 FROM eclipse-temurin:17-jre-alpine

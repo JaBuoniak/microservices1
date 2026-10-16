@@ -4,23 +4,25 @@
 #   docker run -d --name resource-service-app --network microservices1_default -p 8080:8080 -e SPRING_DATASOURCE_URL=jdbc:postgresql://resource-db:5432/resource_db -e SONG_SERVICE_URL=http://song-service-app:8081/songs resource-service
 
 # Build stage
-FROM gradle:8.5-jdk17-alpine AS build
+FROM gradle:8.14-jdk17-alpine AS build
 WORKDIR /app
 
 # Copy configuration files
-COPY gradlew .
+# COPY gradlew .
 COPY gradle ./gradle
 COPY build.gradle settings.gradle ./
 COPY resource-service/build.gradle ./resource-service/
 
 # Cache dependencies
-RUN ./gradlew :resource-service:dependencies --no-daemon
+# RUN ./gradlew :resource-service:dependencies --no-daemon
+RUN gradle :resource-service:dependencies --no-daemon
 
 # Copy source code
 COPY resource-service/src ./resource-service/src
 
 # Build JAR
-RUN ./gradlew :resource-service:assemble --no-daemon -x test
+# RUN ./gradlew :resource-service:assemble --no-daemon -x test
+RUN gradle :resource-service:assemble --no-daemon
 
 # Production Stage
 FROM eclipse-temurin:17-jre-alpine
