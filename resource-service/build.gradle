@@ -1,4 +1,8 @@
 dependencies {
+    // S3
     implementation platform('software.amazon.awssdk:bom:2.29.50')
     implementation 'software.amazon.awssdk:s3'
+
+    // RabbitMQ
+    implementation 'org.springframework.boot:spring-boot-starter-amqp'
 }

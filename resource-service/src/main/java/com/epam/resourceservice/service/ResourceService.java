@@ -4,6 +4,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.amqp.core.Queue;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Service;
 
 import com.epam.resourceservice.client.SongServiceClient;
@@ -20,13 +24,19 @@ public class ResourceService {
     private final ResourceRepository resourceRepository;
     private final SongServiceClient songServiceClient;
     private final S3StorageService s3StorageService;
+    private final RabbitTemplate rabbitTemplate;
+
+    @Value("${resource.queue}")
+    private String queueName;
 
     public ResourceService(ResourceRepository resourceRepository,
                            SongServiceClient songServiceClient,
-                           S3StorageService s3StorageService) {
+                           S3StorageService s3StorageService,
+                           RabbitTemplate rabbitTemplate) {
         this.resourceRepository = resourceRepository;
         this.songServiceClient = songServiceClient;
         this.s3StorageService = s3StorageService;
+        this.rabbitTemplate = rabbitTemplate;
     }
 
     public int createResource(byte[] data) {
@@ -39,6 +49,8 @@ public class ResourceService {
 
         Resource resource = new Resource(location);
         Resource savedResource = resourceRepository.save(resource);
+
+        rabbitTemplate.convertAndSend(queueName, String.valueOf(savedResource.getId()));
 
         return savedResource.getId();
     }
