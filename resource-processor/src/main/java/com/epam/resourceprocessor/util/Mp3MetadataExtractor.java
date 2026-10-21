@@ -1,4 +1,4 @@
-package com.epam.resourceprocessor.service;
+package com.epam.resourceprocessor.util;
 
 import com.epam.resourceprocessor.exception.InvalidAudioFormatException;
 import org.apache.tika.Tika;
