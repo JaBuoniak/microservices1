@@ -1,17 +1,15 @@
-package com.epam.resourceprocessor.mapper;
+package com.epam.resourceprocessor.util;
 
 import com.epam.resourceprocessor.dto.SongMetadataDto;
 import org.apache.tika.metadata.Metadata;
-import org.springframework.stereotype.Component;
 
 import java.util.regex.Pattern;
 
-@Component
 public class SongMetadataMapper {
 
     private static final Pattern DURATION_PATTERN = Pattern.compile("^([0-9]{2}):[0-5][0-9]$");
 
-    public SongMetadataDto toDto(Integer resourceId, Metadata metadata) {
+    public static SongMetadataDto toDto(Integer resourceId, Metadata metadata) {
         return new SongMetadataDto(
                 resourceId,
                 metadata.get("dc:title"),
@@ -22,7 +20,7 @@ public class SongMetadataMapper {
         );
     }
 
-    private String formatDuration(String rawDuration) {
+    private static String formatDuration(String rawDuration) {
         if (rawDuration == null || rawDuration.isBlank()) {
             return null;
         }
@@ -40,4 +38,6 @@ public class SongMetadataMapper {
             return null;
         }
     }
+
+    private SongMetadataMapper() {}
 }
