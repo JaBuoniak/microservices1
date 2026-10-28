@@ -1,7 +1,14 @@
 package com.epam.resourceservice.component;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.delete;
+import static com.github.tomakehurst.wiremock.client.WireMock.deleteRequestedFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 
+import io.cucumber.java.Before;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.When;
 import io.cucumber.java.en.Then;
@@ -10,8 +17,13 @@ import io.cucumber.java.en.And;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.ListObjectsV2Response;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
+import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,9 +32,12 @@ import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.jdbc.core.JdbcTemplate;
 
+import com.epam.resourceservice.dto.DeleteResourcesResponse;
 import com.epam.resourceservice.dto.UploadResourceResponse;
 import com.epam.resourceservice.entity.Resource;
 import com.epam.resourceservice.repository.ResourceRepository;
@@ -41,6 +56,8 @@ public class ResourceStepDefinitions {
     private RabbitTemplate rabbitTemplate;
     @Autowired 
     private S3Client s3Client;
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
 
     @Value("${resource.queue}")
     private String queueName;
@@ -49,13 +66,24 @@ public class ResourceStepDefinitions {
     
     private byte[] uploadedFileBytes;
     private ResponseEntity<UploadResourceResponse> uploadResponse;
+    private ResponseEntity<DeleteResourcesResponse> deleteResponse;
     private ResponseEntity<?> latestResponse;
     private Integer createdResourceId;
+    private final Map<Integer, String> resourceLocations = new HashMap<>();
 
-    @Given("storage and database are clean")
-    public void storage_and_database_are_clean() {
+    @Before
+    public void setUp() {
+        this.uploadedFileBytes = null;
+        this.uploadResponse = null;
+        this.deleteResponse = null;
+        this.latestResponse = null;
+        this.createdResourceId = null;
+        
+        resourceLocations.clear();
         resourceRepository.deleteAll();
 
+        CucumberSpringConfiguration.wireMockServer.resetAll();
+        
         ListObjectsV2Response objectsResponse = s3Client.listObjectsV2(req -> req.bucket(bucketName));
         objectsResponse.contents().forEach(object -> s3Client.deleteObject(DeleteObjectRequest.builder()
                 .bucket(bucketName)
@@ -116,28 +144,59 @@ public class ResourceStepDefinitions {
     }
 
     @Given("resource with ID {int} exists with content of {string}")
-    public void resource_with_id_exists_with_content_of(Integer int1, String string) {
-        // Write code here that turns the phrase above into concrete actions
-        throw new io.cucumber.java.PendingException();
+    public void resource_with_id_exists_with_content_of(Integer id, String fileName) throws IOException {
+        byte[] content = new ClassPathResource(fileName).getInputStream().readAllBytes();
+        String location = "resources/" + id + "-" + UUID.randomUUID() + ".mp3";
+
+        Optional<Resource> existing = resourceRepository.findById(id);
+        if (existing.isPresent()) {
+            location = existing.get().getLocation();
+        } else {
+            jdbcTemplate.update("INSERT INTO resources (id, location) VALUES (?, ?)", id, location);
+        }
+
+        s3StorageService.upload(location, content);
+        resourceLocations.put(id, location);
     }
+
     @Given("song-service accepts metadata deletion for ID {int}")
-    public void song_service_accepts_metadata_deletion_for_id(Integer int1) {
-        // Write code here that turns the phrase above into concrete actions
-        throw new io.cucumber.java.PendingException();
+    public void song_service_accepts_metadata_deletion_for_id(Integer id) {
+        CucumberSpringConfiguration.wireMockServer.stubFor(
+                delete(urlPathEqualTo("/songs"))
+                        .withQueryParam("id", equalTo(String.valueOf(id)))
+                        .willReturn(aResponse()
+                                .withStatus(200)
+                                .withHeader("Content-Type", "application/json")
+                                .withBody("{\"ids\": [" + id + "]}"))
+        );
     }
+
     @When("client deletes resource with ID {int}")
-    public void client_deletes_resource_with_id(Integer int1) {
-        // Write code here that turns the phrase above into concrete actions
-        throw new io.cucumber.java.PendingException();
+    public void client_deletes_resource_with_id(Integer id) {
+        this.deleteResponse = restTemplate.exchange(
+                "/resources?id=" + id,
+                HttpMethod.DELETE,
+                null,
+                DeleteResourcesResponse.class
+        );
+        this.latestResponse = this.deleteResponse;
     }
+
     @Then("resource {int} is removed from database and S3")
-    public void resource_is_removed_from_database_and_s3(Integer int1) {
-        // Write code here that turns the phrase above into concrete actions
-        throw new io.cucumber.java.PendingException();
+    public void resource_is_removed_from_database_and_s3(Integer id) {
+        assertThat(resourceRepository.findById(id)).isEmpty();
+
+        String location = resourceLocations.get(id);
+        assertThat(location).as("S3 location for resource ID " + id + " should have been recorded").isNotNull();
+        assertThatThrownBy(() -> s3StorageService.download(location))
+                .isInstanceOf(NoSuchKeyException.class);
     }
+
     @Then("song-service receives deletion request for ID {int}")
-    public void song_service_receives_deletion_request_for_id(Integer int1) {
-        // Write code here that turns the phrase above into concrete actions
-        throw new io.cucumber.java.PendingException();
+    public void song_service_receives_deletion_request_for_id(Integer id) {
+        CucumberSpringConfiguration.wireMockServer.verify(
+                deleteRequestedFor(urlPathEqualTo("/songs"))
+                        .withQueryParam("id", equalTo(String.valueOf(id)))
+        );
     }
 }

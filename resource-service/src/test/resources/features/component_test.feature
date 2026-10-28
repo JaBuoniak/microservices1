@@ -1,7 +1,6 @@
 Feature: Resource Service Management
 
   Scenario: Successfully upload audio resource
-    Given storage and database are clean
     When client uploads audio file "test.mp3"
     Then response status is 200
     And response contains valid resource ID
