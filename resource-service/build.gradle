@@ -14,4 +14,12 @@ dependencies {
     testImplementation 'org.testcontainers:junit-jupiter'
     testImplementation 'org.testcontainers:localstack'
     testImplementation 'org.testcontainers:rabbitmq'
+    testImplementation 'org.testcontainers:postgresql'
+
+    // Cucumber
+    testImplementation 'io.cucumber:cucumber-java:7.18.0'
+    testImplementation 'io.cucumber:cucumber-spring:7.18.0'
+    testImplementation 'io.cucumber:cucumber-junit-platform-engine:7.18.0'
+    testImplementation 'org.wiremock:wiremock-standalone:3.9.1'
+    testImplementation 'org.junit.platform:junit-platform-suite'
 }
