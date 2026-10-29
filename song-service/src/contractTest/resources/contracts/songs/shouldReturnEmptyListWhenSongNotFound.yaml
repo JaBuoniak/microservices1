@@ -1,0 +1,15 @@
+name: shouldReturnEmptyListWhenSongNotFound
+description: "Should return 200 OK with empty list when deleting non-existent song ID"
+
+request:
+  method: DELETE
+  urlPath: /songs
+  queryParameters:
+    id: "999"
+
+response:
+  status: 200
+  headers:
+    Content-Type: application/json
+  body:
+    ids: []

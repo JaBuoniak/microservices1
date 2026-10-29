@@ -38,6 +38,10 @@ dependencies {
     testImplementation 'org.junit.platform:junit-platform-suite'
 }
 
+contracts {
+    failOnNoContracts = false
+}
+
 contractTest {
     useJUnitPlatform()
 }
