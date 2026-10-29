@@ -35,7 +35,7 @@ public class HappyPathStepDefinitions {
     private ResponseEntity<String> deleteResponse;
     private int resourceId;
 
-    @When("User uploads audio file {string} to Resource Service")
+    @When("User uploads file {string} to Resource Service")
     public void uploadAudioFile(String fileName) throws Exception {
         byte[] audioData;
         try (InputStream is = getClass().getClassLoader().getResourceAsStream(fileName)) {
