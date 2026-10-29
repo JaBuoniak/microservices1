@@ -1,0 +1,17 @@
+name: shouldDeleteMultipleSongs
+description: "Should successfully delete songs metadata by IDs and return deleted IDs"
+
+request:
+  method: DELETE
+  urlPath: /songs
+  queryParameters:
+    id: "1,2"
+
+response:
+  status: 200
+  headers:
+    Content-Type: application/json
+  body:
+    ids:
+      - 1
+      - 2

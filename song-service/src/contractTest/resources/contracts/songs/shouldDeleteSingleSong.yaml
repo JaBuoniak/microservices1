@@ -1,0 +1,16 @@
+name: shouldDeleteSingleSong
+description: "Should successfully delete single song metadata by ID and return deleted ID"
+
+request:
+  method: DELETE
+  urlPath: /songs
+  queryParameters:
+    id: "1"
+
+response:
+  status: 200
+  headers:
+    Content-Type: application/json
+  body:
+    ids:
+      - 1
