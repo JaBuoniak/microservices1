@@ -21,7 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class HappyPathStepDefinitions {
+public class StepDefinitions {
 
     @Autowired
     private RestClient resourceRestClient;
@@ -36,7 +36,7 @@ public class HappyPathStepDefinitions {
     private int resourceId;
 
     @When("User uploads file {string} to Resource Service")
-    public void uploadAudioFile(String fileName) throws Exception {
+    public void uploadFile(String fileName) throws Exception {
         byte[] audioData;
         try (InputStream is = getClass().getClassLoader().getResourceAsStream(fileName)) {
             assertNotNull(is, "File " + fileName + " must be present in classpath");
@@ -85,8 +85,24 @@ public class HappyPathStepDefinitions {
                 });
     }
 
+    @Then("within {int} seconds Song Service does NOT have metadata for this resource")
+    public void verifyNoSongMetadata(int timeoutSeconds) {
+        await()
+                .during(Duration.ofSeconds(timeoutSeconds))
+                .atMost(Duration.ofSeconds(timeoutSeconds + 1))
+                .pollInterval(Duration.ofMillis(500))
+                .untilAsserted(() -> {
+                    assertThrows(HttpClientErrorException.NotFound.class, () -> {
+                        songRestClient.get()
+                                .uri("/songs/{id}", resourceId)
+                                .retrieve()
+                                .toBodilessEntity();
+                    });
+                });
+    }
+
     @When("User deletes this resource from Resource Service")
-    public void deleteAudioResource() {
+    public void deleteResource() {
         deleteResponse = resourceRestClient.delete()
                 .uri("/resources?id=" + resourceId)
                 .retrieve()
