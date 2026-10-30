@@ -64,4 +64,41 @@ class ResourceProcessingServiceTest {
         assertThat(savedDto.artist()).isEqualTo("Queen");
         assertThat(savedDto.duration()).isEqualTo("05:54");
     }
+
+    @Test
+    @DisplayName("Should gracefully skip processing when resource is not found (404)")
+    void shouldSkipProcessingWhenResourceNotFound() {
+        // given
+        Integer resourceId = 999;
+        when(resourceServiceClient.getResource(resourceId))
+                .thenThrow(new org.springframework.web.client.HttpClientErrorException(org.springframework.http.HttpStatus.NOT_FOUND));
+
+        // when
+        resourceProcessingService.process(resourceId);
+
+        // then
+        verify(resourceServiceClient).getResource(resourceId);
+        verifyNoInteractions(metadataExtractor);
+        verifyNoInteractions(songServiceClient);
+    }
+
+    @Test
+    @DisplayName("Should gracefully skip processing when audio format is invalid")
+    void shouldSkipProcessingWhenAudioFormatIsInvalid() {
+        // given
+        Integer resourceId = 124;
+        byte[] invalidBytes = new byte[]{9, 9, 9};
+
+        when(resourceServiceClient.getResource(resourceId)).thenReturn(invalidBytes);
+        when(metadataExtractor.extract(invalidBytes))
+                .thenThrow(new com.epam.resourceprocessor.exception.InvalidAudioFormatException("Invalid format"));
+
+        // when
+        resourceProcessingService.process(resourceId);
+
+        // then
+        verify(resourceServiceClient).getResource(resourceId);
+        verify(metadataExtractor).extract(invalidBytes);
+        verifyNoInteractions(songServiceClient);
+    }
 }
