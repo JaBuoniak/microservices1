@@ -87,6 +87,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+      start_period: 30s
     depends_on:
       song-db:
         condition: service_healthy
@@ -119,6 +120,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+      start_period: 30s
     depends_on:
       resource-db:
         condition: service_healthy
