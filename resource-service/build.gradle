@@ -47,6 +47,7 @@ contracts {
 
 contractTest {
     useJUnitPlatform()
+    dependsOn ':song-service:publishToMavenLocal'
 }
 
 publishing {
