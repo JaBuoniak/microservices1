@@ -85,11 +85,31 @@ services:
       retries: 5
       start_period: 20s
 
+  gateway-service:
+    build:
+      context: .
+      dockerfile: gateway-service/Dockerfile
+    container_name: gateway-service
+    restart: always
+    environment:
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: ${EUREKA_SERVICE_URL}
+    ports:
+      - "${GATEWAY_SERVICE_PORT}:8088"
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "8088"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    depends_on:
+      eureka-service:
+        condition: service_healthy
+
   song-service:
     build:
       context: .
       dockerfile: song-service/Dockerfile
-    container_name: song-service
+    # container_name: song-service # Commented out to allow scaling
     restart: always
     environment:
       SPRING_DATASOURCE_URL: ${SONG_DB_URL}
