@@ -18,8 +18,9 @@ I test a single microservice in isolation as an independent component. External 
 - component test of isolated business flows with WireMock in resource-service
 
 ### 4. Contract tests
-They ensure a consistent "language" between microservices. They make sure that a request from one service is fully compatible with the endpoint requirements in another service. They allow catching format differences without running multiple microservices at the same time.
-- contract test of song deletion endpoint between resource-service (consumer) and song-service (provider)
+They ensure a consistent "language" between microservices across both communication styles: synchronous HTTP and asynchronous messaging. They make sure that messages and requests from one service are fully compatible with expectations in another service, catching format differences without running multiple microservices at the same time.
+- synchronous HTTP contract test of song deletion endpoint (`DELETE /songs`) between `resource-service` (consumer) and `song-service` (provider)
+- asynchronous messaging contract test for the "resource uploaded" event published to RabbitMQ between `resource-service` (producer) and `resource-processor` (consumer), verified via `@AutoConfigureMessageVerifier` and `StubTrigger`
 
 ### 5. End-to-End (E2E) tests
 I test the overall system behavior in a fully running environment with databases, storage, and message broker. The scenarios I've previously verified with Postman, I now automate with Cucumber to ensure the entire processing pipeline reacts as expected.
