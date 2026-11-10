@@ -14,6 +14,8 @@ dependencyManagement {
 }
 
 dependencies {
+    implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
+
     // S3
     implementation platform('software.amazon.awssdk:bom:2.29.50')
     implementation 'software.amazon.awssdk:s3'
