@@ -1,0 +1,16 @@
+name: shouldReturn400WhenSongIdIsInvalid
+description: "Should return 400 Bad Request when song ID format is invalid"
+
+request:
+  method: DELETE
+  urlPath: /songs
+  queryParameters:
+    id: "invalid"
+
+response:
+  status: 400
+  headers:
+    Content-Type: application/json
+  body:
+    errorMessage: "Invalid ID format: 'invalid'. Only positive integers are allowed"
+    errorCode: "400"

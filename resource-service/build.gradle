@@ -1,3 +1,18 @@
+plugins {
+    id 'org.springframework.cloud.contract'  
+    id 'maven-publish'
+}
+
+ext {
+    set('springCloudVersion', "2024.0.1")
+}
+
+dependencyManagement {
+    imports {
+        mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
+    }
+}
+
 dependencies {
     // S3
     implementation platform('software.amazon.awssdk:bom:2.29.50')
@@ -5,4 +20,42 @@ dependencies {
 
     // RabbitMQ
     implementation 'org.springframework.boot:spring-boot-starter-amqp'
+
+    // Testing
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.springframework.cloud:spring-cloud-starter-contract-verifier'
+    testImplementation 'org.springframework.cloud:spring-cloud-starter-contract-stub-runner'
+
+    // Testcontainers
+    testImplementation 'org.springframework.boot:spring-boot-testcontainers'
+    testImplementation 'org.testcontainers:junit-jupiter'
+    testImplementation 'org.testcontainers:localstack'
+    testImplementation 'org.testcontainers:rabbitmq'
+    testImplementation 'org.testcontainers:postgresql'
+
+    // Cucumber
+    testImplementation 'io.cucumber:cucumber-java:7.18.0'
+    testImplementation 'io.cucumber:cucumber-spring:7.18.0'
+    testImplementation 'io.cucumber:cucumber-junit-platform-engine:7.18.0'
+    testImplementation 'org.junit.platform:junit-platform-suite'
 }
+
+contracts {
+    testFramework = "JUNIT5"
+    baseClassForTests = "com.epam.resourceservice.contract.BaseContractTest"
+}
+
+contractTest {
+    useJUnitPlatform()
+    dependsOn ':song-service:publishToMavenLocal'
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            artifactId = project.name
+            artifact verifierStubsJar
+        }
+    }
+}
+
