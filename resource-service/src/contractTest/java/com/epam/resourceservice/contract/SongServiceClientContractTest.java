@@ -20,7 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
         properties = "song.service.url=http://localhost:${stubrunner.runningstubs.song-service.port}/songs"
 )
 @AutoConfigureStubRunner(
-        ids = "com.epam:song-service:+:stubs",
+        ids = "com.epam:song-service:1.0-SNAPSHOT:stubs",
         stubsMode = StubRunnerProperties.StubsMode.LOCAL
 )
 class SongServiceClientContractTest {

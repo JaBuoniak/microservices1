@@ -1,0 +1,10 @@
+name: shouldPublishResourceUploaded
+description: "Should publish resource ID to RabbitMQ when resource is uploaded"
+label: "resource_uploaded"
+
+input:
+  triggeredBy: "triggerResourceUploaded()"
+
+outputMessage:
+  sentTo: "resource-processing-queue"
+  body: "1"

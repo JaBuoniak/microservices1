@@ -70,16 +70,52 @@ services:
       timeout: 5s
       retries: 5
 
+  eureka-service:
+    build:
+      context: .
+      dockerfile: eureka-service/Dockerfile
+    container_name: eureka-service
+    restart: always
+    ports:
+      - "${EUREKA_SERVICE_PORT}:8761"
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "8761"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  gateway-service:
+    build:
+      context: .
+      dockerfile: gateway-service/Dockerfile
+    container_name: gateway-service
+    restart: always
+    environment:
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: ${EUREKA_SERVICE_URL}
+    ports:
+      - "${GATEWAY_SERVICE_PORT}:8088"
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "8088"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    depends_on:
+      eureka-service:
+        condition: service_healthy
+
   song-service:
     build:
       context: .
       dockerfile: song-service/Dockerfile
-    container_name: song-service
+    # container_name: song-service # Commented out to allow scaling
     restart: always
     environment:
       SPRING_DATASOURCE_URL: ${SONG_DB_URL}
       SPRING_DATASOURCE_USERNAME: ${SONG_DB_USER}
       SPRING_DATASOURCE_PASSWORD: ${SONG_DB_PASSWORD}
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: ${EUREKA_SERVICE_URL}
     ports:
       - "${SONG_SERVICE_PORT}:8081"
     healthcheck:
@@ -90,6 +126,8 @@ services:
       start_period: 30s
     depends_on:
       song-db:
+        condition: service_healthy
+      eureka-service:
         condition: service_healthy
 
   resource-service:
@@ -113,6 +151,7 @@ services:
       SPRING_RABBITMQ_USERNAME: ${RABBITMQ_USER}
       SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
       RESOURCE_QUEUE: ${RABBITMQ_QUEUE}
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: ${EUREKA_SERVICE_URL}
     ports:
       - "${RESOURCE_SERVICE_PORT}:8080"
     healthcheck:
@@ -127,6 +166,8 @@ services:
       localstack:
         condition: service_healthy
       rabbitmq:
+        condition: service_healthy
+      eureka-service:
         condition: service_healthy
 
   resource-processor:
@@ -143,12 +184,15 @@ services:
       RESOURCE_QUEUE: ${RABBITMQ_QUEUE}
       RESOURCE_SERVICE_URL: ${RESOURCE_SERVICE_URL}
       SONG_SERVICE_URL: ${SONG_SERVICE_URL}
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: ${EUREKA_SERVICE_URL}
     depends_on:
       rabbitmq:
         condition: service_healthy
       resource-service:
         condition: service_healthy
       song-service:
+        condition: service_healthy
+      eureka-service:
         condition: service_healthy
 
 volumes:
