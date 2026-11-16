@@ -37,6 +37,25 @@ services:
       timeout: 5s
       retries: 5
 
+  storage-db:
+    image: postgres:17-alpine
+    container_name: storage-db
+    restart: always
+    environment:
+      POSTGRES_DB: ${STORAGE_DB_NAME}
+      POSTGRES_USER: ${STORAGE_DB_USER}
+      POSTGRES_PASSWORD: ${STORAGE_DB_PASSWORD}
+    ports:
+      - "${STORAGE_DB_PORT}:5432"
+    volumes:
+      - storage_db_data:/var/lib/postgresql/data
+      - ./init-scripts/storage-db:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${STORAGE_DB_USER} -d ${STORAGE_DB_NAME}" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   localstack:
     image: localstack/localstack:3.8
     container_name: localstack
@@ -198,5 +217,6 @@ services:
 volumes:
   resource_db_data:
   song_db_data:
+  storage_db_data:
   localstack_data:
   rabbitmq_data:
