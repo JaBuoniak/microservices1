@@ -124,6 +124,31 @@ services:
       eureka-service:
         condition: service_healthy
 
+  storage-service:
+    build:
+      context: .
+      dockerfile: storage-service/Dockerfile
+    container_name: storage-service
+    restart: always
+    environment:
+      SPRING_DATASOURCE_URL: ${STORAGE_DB_URL}
+      SPRING_DATASOURCE_USERNAME: ${STORAGE_DB_USER}
+      SPRING_DATASOURCE_PASSWORD: ${STORAGE_DB_PASSWORD}
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: ${EUREKA_SERVICE_URL}
+    ports:
+      - "${STORAGE_SERVICE_PORT}:8087"
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "8087"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    depends_on:
+      storage-db:
+        condition: service_healthy
+      eureka-service:
+        condition: service_healthy
+
   song-service:
     build:
       context: .

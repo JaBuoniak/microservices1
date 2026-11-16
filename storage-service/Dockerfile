@@ -23,7 +23,7 @@ WORKDIR /app
 # Copy JAR using wildcard
 COPY --from=build /app/storage-service/build/libs/*.jar app.jar
 
-EXPOSE 8082
+EXPOSE 8087
 
 CMD ["java", "-jar", "app.jar"]
 
