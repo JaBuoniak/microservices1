@@ -185,6 +185,7 @@ services:
       SPRING_DATASOURCE_USERNAME: ${RESOURCE_DB_USER}
       SPRING_DATASOURCE_PASSWORD: ${RESOURCE_DB_PASSWORD}
       SONG_SERVICE_URL: ${SONG_SERVICE_URL}
+      STORAGE_SERVICE_URL: ${STORAGE_SERVICE_URL}
       AWS_S3_ENDPOINT: ${S3_SERVICE_URL}
       AWS_S3_REGION: ${S3_SERVICE_REGION}
       AWS_S3_BUCKET: ${S3_SERVICE_BUCKET}
@@ -212,6 +213,8 @@ services:
       rabbitmq:
         condition: service_healthy
       eureka-service:
+        condition: service_healthy
+      storage-service:
         condition: service_healthy
 
   resource-processor:
