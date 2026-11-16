@@ -1,4 +1,5 @@
 package com.epam.storageservice.entity;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -8,14 +9,21 @@ import jakarta.persistence.UniqueConstraint;
 
 @Entity
 @Table(name = "storages", uniqueConstraints = {
+    @UniqueConstraint(columnNames = {"type"}),
     @UniqueConstraint(columnNames = {"bucket", "path"})
 })
 public class Storage {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
+
+    @Column(name = "type", nullable = false, unique = true)
     private String type;
+
+    @Column(nullable = false)
     private String bucket;
+
+    @Column(nullable = false)
     private String path;
 
     public Storage() {}
