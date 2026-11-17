@@ -21,6 +21,8 @@ import com.epam.resourceservice.repository.ResourceRepository;
 @Service
 public class ResourceService {
 
+    public static final String PERMANENT_STORAGE_TYPE = "PERMANENT";
+    public static final String STAGING_STORAGE_TYPE = "STAGING";
     private final ResourceRepository resourceRepository;
     private final SongServiceClient songServiceClient;
     private final StorageServiceClient storageServiceClient;
@@ -47,14 +49,14 @@ public class ResourceService {
             throw new InvalidAudioFormatException("The request body is invalid MP3: body is empty");
         }
 
-        StorageResponse stagingStorage = storageServiceClient.getStorageByType("STAGING");
+        StorageResponse stagingStorage = storageServiceClient.getStorageByType(STAGING_STORAGE_TYPE);
         String path = stagingStorage.path() != null ? stagingStorage.path().replaceAll("^/+", "").replaceAll("/+$", "") : "";
         String filename = UUID.randomUUID() + ".mp3";
         String location = path.isEmpty() ? filename : path + "/" + filename;
 
         s3StorageService.upload(stagingStorage.bucket(), location, data);
 
-        Resource resource = new Resource(location, "STAGING", stagingStorage.bucket());
+        Resource resource = new Resource(location, STAGING_STORAGE_TYPE, stagingStorage.bucket());
         Resource savedResource = resourceRepository.save(resource);
 
         rabbitTemplate.convertAndSend(queueName, String.valueOf(savedResource.getId()));
@@ -116,5 +118,34 @@ public class ResourceService {
             }
         }
         return ids;
+    }
+
+    public void promoteToPermanent(Integer resourceId) {
+        Resource resource = resourceRepository.findById(resourceId)
+                .orElseThrow(() -> new ResourceNotFoundException("Resource with ID=" + resourceId + " not found"));
+
+        if (PERMANENT_STORAGE_TYPE.equals(resource.getState())) {
+            return;
+        }
+
+        StorageResponse permanentStorage = storageServiceClient.getStorageByType(PERMANENT_STORAGE_TYPE);
+
+        String oldLocation = resource.getLocation();
+        String filename = oldLocation.contains("/")
+                ? oldLocation.substring(oldLocation.lastIndexOf("/") + 1)
+                : oldLocation;
+
+        String targetPath = permanentStorage.path() != null
+                ? permanentStorage.path().replaceAll("^/+", "").replaceAll("/+$", "")
+                : "";
+
+        String newLocation = targetPath.isEmpty() ? filename : targetPath + "/" + filename;
+
+        s3StorageService.move(resource.getBucket(), oldLocation, permanentStorage.bucket(), newLocation);
+
+        resource.setState(PERMANENT_STORAGE_TYPE);
+        resource.setBucket(permanentStorage.bucket());
+        resource.setLocation(newLocation);
+        resourceRepository.save(resource);
     }
 }
