@@ -11,15 +11,24 @@ import org.springframework.web.client.RestClient;
 
 import com.epam.resourceservice.dto.StorageResponse;
 
+import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 
 @Component
 public class StorageServiceClient {
     private static final Logger log = LoggerFactory.getLogger(StorageServiceClient.class);
+    private static final String STORAGE_SERVICE_CB = "storageService";
     private final RestClient restClient;
 
-    public StorageServiceClient(@Value("${storage.service.url:http://localhost:8087/storages}") String storageServiceUrl) {
+    public StorageServiceClient(
+            @Value("${storage.service.url:http://localhost:8087/storages}") String storageServiceUrl,
+            CircuitBreakerRegistry circuitBreakerRegistry) {
         this.restClient = RestClient.builder().baseUrl(storageServiceUrl).build();
+        circuitBreakerRegistry.circuitBreaker(STORAGE_SERVICE_CB)
+                .getEventPublisher()
+                .onStateTransition(event ->
+                        log.info("CircuitBreaker '{}' state transition: {}",
+                                event.getCircuitBreakerName(), event.getStateTransition()));
     }
 
 
@@ -27,7 +36,7 @@ public class StorageServiceClient {
         return restClient.get().retrieve().body(new ParameterizedTypeReference<List<StorageResponse>>() {});
     }
 
-    @CircuitBreaker(name = "storageService", fallbackMethod = "getStorageByTypeFallback")
+    @CircuitBreaker(name = STORAGE_SERVICE_CB, fallbackMethod = "getStorageByTypeFallback")
     public StorageResponse getStorageByType(String storageType) {
         List<StorageResponse> storages = getStorages();
         if (storages == null) {
