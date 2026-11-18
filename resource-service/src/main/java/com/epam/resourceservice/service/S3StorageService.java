@@ -19,60 +19,70 @@ public class S3StorageService {
     private static final Logger log = LoggerFactory.getLogger(S3StorageService.class);
 
     private final S3Client s3Client;
-    private final String bucketName;
 
-    public S3StorageService(S3Client s3Client, @Value("${aws.s3.bucket}") String bucketName) {
+    public S3StorageService(S3Client s3Client) {
         this.s3Client = s3Client;
-        this.bucketName = bucketName;
     }
 
-    public void upload(String key, byte[] data) {
+    public void upload(String bucket, String key, byte[] data) {
+        ensureBucketExists(bucket);
         PutObjectRequest putRequest = PutObjectRequest.builder()
-                .bucket(bucketName)
+                .bucket(bucket)
                 .key(key)
                 .build();
 
         s3Client.putObject(putRequest, RequestBody.fromBytes(data));
     }
 
-    public byte[] download(String key) {
+    public byte[] download(String bucket, String key) {
         GetObjectRequest getRequest = GetObjectRequest.builder()
-                .bucket(bucketName)
+                .bucket(bucket)
                 .key(key)
                 .build();
 
         return s3Client.getObjectAsBytes(getRequest).asByteArray();
     }
 
-    public void delete(String key) {
+    public void delete(String bucket, String key) {
         DeleteObjectRequest deleteRequest = DeleteObjectRequest.builder()
-                .bucket(bucketName)
+                .bucket(bucket)
                 .key(key)
                 .build();
 
         s3Client.deleteObject(deleteRequest);
     }
 
-    @EventListener(ApplicationReadyEvent.class)
-    public void testConnectionAndInitBucket() {
+    public void move(String sourceBucket, String sourceKey, String targetBucket, String targetKey) {
+        ensureBucketExists(targetBucket);
+        CopyObjectRequest copyRequest = CopyObjectRequest.builder()
+                .sourceBucket(sourceBucket)
+                .sourceKey(sourceKey)
+                .destinationBucket(targetBucket)
+                .destinationKey(targetKey)
+                .build();
+
+        s3Client.copyObject(copyRequest);
+        delete(sourceBucket, sourceKey);
+    }
+
+    public void ensureBucketExists(String bucket) {
         try {
             boolean bucketExists = s3Client.listBuckets().buckets().stream()
-                    .anyMatch(b -> b.name().equals(bucketName));
-
+                    .anyMatch(b -> b.name().equals(bucket));
             if (!bucketExists) {
-                s3Client.createBucket(CreateBucketRequest.builder().bucket(bucketName).build());
-                log.info("Bucket '{}' did not exist and was successfully created in S3!", bucketName);
-            } else {
-                log.info("Bucket '{}' already exists in S3.", bucketName);
+                s3Client.createBucket(CreateBucketRequest.builder().bucket(bucket).build());
+                log.info("Bucket '{}' did not exist and was successfully created in S3!", bucket);
             }
+        } catch (Exception e) {
+            log.warn("Could not ensure bucket '{}' exists: {}", bucket, e.getMessage());
+        }
+    }
 
-            ListObjectsV2Response response = s3Client.listObjectsV2(
-                    ListObjectsV2Request.builder().bucket(bucketName).build()
-            );
-
-            List<S3Object> files = response.contents();
-            log.info("S3 Connection SUCCESS! Found {} files in bucket '{}'.", files.size(), bucketName);
-
+    @EventListener(ApplicationReadyEvent.class)
+    public void testConnection() {
+        try {
+            int bucketCount = s3Client.listBuckets().buckets().size();
+            log.info("S3 Connection SUCCESS! Found {} buckets in S3.", bucketCount);
         } catch (Exception e) {
             log.error("Failed to connect to S3 LocalStack: {}", e.getMessage(), e);
         }

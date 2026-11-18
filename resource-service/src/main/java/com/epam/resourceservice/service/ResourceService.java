@@ -4,13 +4,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Service;
 
 import com.epam.resourceservice.client.SongServiceClient;
+import com.epam.resourceservice.client.StorageServiceClient;
+import com.epam.resourceservice.dto.StorageResponse;
 import com.epam.resourceservice.entity.Resource;
 import com.epam.resourceservice.exception.InvalidAudioFormatException;
 import com.epam.resourceservice.exception.InvalidCsvParameterException;
@@ -21,8 +21,11 @@ import com.epam.resourceservice.repository.ResourceRepository;
 @Service
 public class ResourceService {
 
+    public static final String PERMANENT_STORAGE_TYPE = "PERMANENT";
+    public static final String STAGING_STORAGE_TYPE = "STAGING";
     private final ResourceRepository resourceRepository;
     private final SongServiceClient songServiceClient;
+    private final StorageServiceClient storageServiceClient;
     private final S3StorageService s3StorageService;
     private final RabbitTemplate rabbitTemplate;
 
@@ -31,10 +34,12 @@ public class ResourceService {
 
     public ResourceService(ResourceRepository resourceRepository,
                            SongServiceClient songServiceClient,
+                           StorageServiceClient storageServiceClient,
                            S3StorageService s3StorageService,
                            RabbitTemplate rabbitTemplate) {
         this.resourceRepository = resourceRepository;
         this.songServiceClient = songServiceClient;
+        this.storageServiceClient = storageServiceClient;
         this.s3StorageService = s3StorageService;
         this.rabbitTemplate = rabbitTemplate;
     }
@@ -44,10 +49,14 @@ public class ResourceService {
             throw new InvalidAudioFormatException("The request body is invalid MP3: body is empty");
         }
 
-        String location = "resources/" + UUID.randomUUID() + ".mp3";
-        s3StorageService.upload(location, data);
+        StorageResponse stagingStorage = storageServiceClient.getStorageByType(STAGING_STORAGE_TYPE);
+        String path = stagingStorage.path() != null ? stagingStorage.path().replaceAll("^/+", "").replaceAll("/+$", "") : "";
+        String filename = UUID.randomUUID() + ".mp3";
+        String location = path.isEmpty() ? filename : path + "/" + filename;
 
-        Resource resource = new Resource(location);
+        s3StorageService.upload(stagingStorage.bucket(), location, data);
+
+        Resource resource = new Resource(location, STAGING_STORAGE_TYPE, stagingStorage.bucket());
         Resource savedResource = resourceRepository.save(resource);
 
         rabbitTemplate.convertAndSend(queueName, String.valueOf(savedResource.getId()));
@@ -63,7 +72,7 @@ public class ResourceService {
         Resource resource = resourceRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Resource with ID=" + id + " not found"));
 
-        return s3StorageService.download(resource.getLocation());
+        return s3StorageService.download(resource.getBucket(), resource.getLocation());
     }
 
     public List<Integer> deleteResources(String idsCsv) {
@@ -80,7 +89,7 @@ public class ResourceService {
         List<Integer> existingIds = existingResources.stream().map(Resource::getId).toList();
 
         for (Resource resource : existingResources) {
-            s3StorageService.delete(resource.getLocation());
+            s3StorageService.delete(resource.getBucket(), resource.getLocation());
         }
 
         resourceRepository.deleteAll(existingResources);
@@ -109,5 +118,34 @@ public class ResourceService {
             }
         }
         return ids;
+    }
+
+    public void promoteToPermanent(Integer resourceId) {
+        Resource resource = resourceRepository.findById(resourceId)
+                .orElseThrow(() -> new ResourceNotFoundException("Resource with ID=" + resourceId + " not found"));
+
+        if (PERMANENT_STORAGE_TYPE.equals(resource.getState())) {
+            return;
+        }
+
+        StorageResponse permanentStorage = storageServiceClient.getStorageByType(PERMANENT_STORAGE_TYPE);
+
+        String oldLocation = resource.getLocation();
+        String filename = oldLocation.contains("/")
+                ? oldLocation.substring(oldLocation.lastIndexOf("/") + 1)
+                : oldLocation;
+
+        String targetPath = permanentStorage.path() != null
+                ? permanentStorage.path().replaceAll("^/+", "").replaceAll("/+$", "")
+                : "";
+
+        String newLocation = targetPath.isEmpty() ? filename : targetPath + "/" + filename;
+
+        s3StorageService.move(resource.getBucket(), oldLocation, permanentStorage.bucket(), newLocation);
+
+        resource.setState(PERMANENT_STORAGE_TYPE);
+        resource.setBucket(permanentStorage.bucket());
+        resource.setLocation(newLocation);
+        resourceRepository.save(resource);
     }
 }

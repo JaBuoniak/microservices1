@@ -15,6 +15,8 @@ public class Resource {
     private Integer id;
 
     private String location;
+    private String state;
+    private String bucket;
 
     public Resource() {}
 
@@ -22,8 +24,18 @@ public class Resource {
         this.location = location;
     }
 
+    public Resource(String location, String state, String bucket) {
+        this.location = location;
+        this.state = state;
+        this.bucket = bucket;
+    }
+
     public Integer getId() {
         return id;
+    }
+
+    public void setId(Integer id) {
+        this.id = id;
     }
 
     public String getLocation() {
@@ -32,5 +44,21 @@ public class Resource {
 
     public void setLocation(String location) {
         this.location = location;
+    }
+
+    public String getState() {
+        return state;
+    }
+
+    public void setState(String state) {
+        this.state = state;
+    }
+
+    public String getBucket() {
+        return bucket;
+    }
+
+    public void setBucket(String bucket) {
+        this.bucket = bucket;
     }
 }

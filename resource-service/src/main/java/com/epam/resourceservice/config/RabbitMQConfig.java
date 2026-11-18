@@ -11,8 +11,16 @@ public class RabbitMQConfig {
     @Value("${resource.queue}")
     private String queueName;
 
+    @Value("${resource.processed.queue}")
+    private String processedQueueName;
+
     @Bean
     public Queue resourceProcessingQueue() {
         return new Queue(queueName, true);
+    }
+
+    @Bean
+    public Queue resourceProcessedQueue() {
+        return new Queue(processedQueueName, true);
     }
 }
