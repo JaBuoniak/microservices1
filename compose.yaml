@@ -95,6 +95,9 @@ services:
       dockerfile: eureka-service/Dockerfile
     container_name: eureka-service
     restart: always
+    environment:
+      LOGSTASH_HOST: logstash
+      LOGSTASH_PORT: ${LOGSTASH_PORT}
     ports:
       - "${EUREKA_SERVICE_PORT}:8761"
     healthcheck:
@@ -112,6 +115,8 @@ services:
     restart: always
     environment:
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: ${EUREKA_SERVICE_URL}
+      LOGSTASH_HOST: logstash
+      LOGSTASH_PORT: ${LOGSTASH_PORT}
     ports:
       - "${GATEWAY_SERVICE_PORT}:8088"
     healthcheck:
@@ -135,6 +140,8 @@ services:
       SPRING_DATASOURCE_USERNAME: ${STORAGE_DB_USER}
       SPRING_DATASOURCE_PASSWORD: ${STORAGE_DB_PASSWORD}
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: ${EUREKA_SERVICE_URL}
+      LOGSTASH_HOST: logstash
+      LOGSTASH_PORT: ${LOGSTASH_PORT}
     ports:
       - "${STORAGE_SERVICE_PORT}:8087"
     healthcheck:
@@ -160,6 +167,8 @@ services:
       SPRING_DATASOURCE_USERNAME: ${SONG_DB_USER}
       SPRING_DATASOURCE_PASSWORD: ${SONG_DB_PASSWORD}
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: ${EUREKA_SERVICE_URL}
+      LOGSTASH_HOST: logstash
+      LOGSTASH_PORT: ${LOGSTASH_PORT}
     ports:
       - "${SONG_SERVICE_PORT}:8081"
     healthcheck:
@@ -236,6 +245,8 @@ services:
       RESOURCE_SERVICE_URL: ${RESOURCE_SERVICE_URL}
       SONG_SERVICE_URL: ${SONG_SERVICE_URL}
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: ${EUREKA_SERVICE_URL}
+      LOGSTASH_HOST: logstash
+      LOGSTASH_PORT: ${LOGSTASH_PORT}
     depends_on:
       rabbitmq:
         condition: service_healthy

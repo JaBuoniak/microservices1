@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
-    
     <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
     <include resource="org/springframework/boot/logging/logback/console-appender.xml"/>
 
@@ -8,9 +7,8 @@
 
     <appender name="LOGSTASH" class="net.logstash.logback.appender.LogstashTcpSocketAppender">
         <destination>${LOGSTASH_HOST:-localhost}:${LOGSTASH_PORT:-5000}</destination>
-        
         <encoder class="net.logstash.logback.encoder.LogstashEncoder">
-            <customFields>{"service":"${appName:-resource-service}"}</customFields>
+            <customFields>{"service":"${appName}"}</customFields>
         </encoder>
     </appender>
 
