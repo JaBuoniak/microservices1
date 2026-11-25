@@ -98,6 +98,8 @@ services:
     environment:
       LOGSTASH_HOST: logstash
       LOGSTASH_PORT: ${LOGSTASH_PORT}
+      ELASTICSEARCH_HOST: elasticsearch
+      ELASTICSEARCH_PORT: ${ELASTICSEARCH_PORT}
     ports:
       - "${EUREKA_SERVICE_PORT}:8761"
     healthcheck:
@@ -117,6 +119,8 @@ services:
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: ${EUREKA_SERVICE_URL}
       LOGSTASH_HOST: logstash
       LOGSTASH_PORT: ${LOGSTASH_PORT}
+      ELASTICSEARCH_HOST: elasticsearch
+      ELASTICSEARCH_PORT: ${ELASTICSEARCH_PORT}
     ports:
       - "${GATEWAY_SERVICE_PORT}:8088"
     healthcheck:
@@ -142,6 +146,8 @@ services:
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: ${EUREKA_SERVICE_URL}
       LOGSTASH_HOST: logstash
       LOGSTASH_PORT: ${LOGSTASH_PORT}
+      ELASTICSEARCH_HOST: elasticsearch
+      ELASTICSEARCH_PORT: ${ELASTICSEARCH_PORT}
     ports:
       - "${STORAGE_SERVICE_PORT}:8087"
     healthcheck:
@@ -169,6 +175,8 @@ services:
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: ${EUREKA_SERVICE_URL}
       LOGSTASH_HOST: logstash
       LOGSTASH_PORT: ${LOGSTASH_PORT}
+      ELASTICSEARCH_HOST: elasticsearch
+      ELASTICSEARCH_PORT: ${ELASTICSEARCH_PORT}
     ports:
       - "${SONG_SERVICE_PORT}:8081"
     healthcheck:
@@ -209,6 +217,8 @@ services:
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: ${EUREKA_SERVICE_URL}
       LOGSTASH_HOST: logstash
       LOGSTASH_PORT: ${LOGSTASH_PORT}
+      ELASTICSEARCH_HOST: elasticsearch
+      ELASTICSEARCH_PORT: ${ELASTICSEARCH_PORT}
     ports:
       - "${RESOURCE_SERVICE_PORT}:8080"
     healthcheck:
@@ -247,6 +257,8 @@ services:
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: ${EUREKA_SERVICE_URL}
       LOGSTASH_HOST: logstash
       LOGSTASH_PORT: ${LOGSTASH_PORT}
+      ELASTICSEARCH_HOST: elasticsearch
+      ELASTICSEARCH_PORT: ${ELASTICSEARCH_PORT}
     depends_on:
       rabbitmq:
         condition: service_healthy
