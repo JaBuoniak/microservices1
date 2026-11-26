@@ -13,8 +13,10 @@ public class ResourceServiceClient {
 
     private final RestClient restClient;
 
-    public ResourceServiceClient(@Value("${resource.service.url:http://localhost:8080/resources}") String resourceServiceUrl) {
-        this.restClient = RestClient.builder().baseUrl(resourceServiceUrl).build();
+    public ResourceServiceClient(
+            @Value("${resource.service.url:http://localhost:8080/resources}") String resourceServiceUrl,
+            RestClient.Builder restClientBuilder) {
+        this.restClient = restClientBuilder.baseUrl(resourceServiceUrl).build();
     }
 
     @Retryable(

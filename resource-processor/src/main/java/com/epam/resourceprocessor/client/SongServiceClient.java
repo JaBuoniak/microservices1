@@ -14,8 +14,10 @@ public class SongServiceClient {
 
     private final RestClient restClient;
 
-    public SongServiceClient(@Value("${song.service.url:http://localhost:8081/songs}") String songServiceUrl) {
-        this.restClient = RestClient.builder().baseUrl(songServiceUrl).build();
+    public SongServiceClient(
+            @Value("${song.service.url:http://localhost:8081/songs}") String songServiceUrl,
+            RestClient.Builder restClientBuilder) {
+        this.restClient = restClientBuilder.baseUrl(songServiceUrl).build();
     }
 
     @Retryable(

@@ -22,8 +22,9 @@ public class StorageServiceClient {
 
     public StorageServiceClient(
             @Value("${storage.service.url:http://localhost:8087/storages}") String storageServiceUrl,
-            CircuitBreakerRegistry circuitBreakerRegistry) {
-        this.restClient = RestClient.builder().baseUrl(storageServiceUrl).build();
+            CircuitBreakerRegistry circuitBreakerRegistry,
+            RestClient.Builder restClientBuilder) {
+        this.restClient = restClientBuilder.baseUrl(storageServiceUrl).build();
         circuitBreakerRegistry.circuitBreaker(STORAGE_SERVICE_CB)
                 .getEventPublisher()
                 .onStateTransition(event ->
