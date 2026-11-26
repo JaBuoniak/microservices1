@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
 import com.epam.resourceprocessor.client.ResourceServiceClient;
 import com.epam.resourceprocessor.client.SongServiceClient;
+import com.epam.resourceprocessor.dto.SongMetadataDto;
 import com.epam.resourceprocessor.exception.InvalidAudioFormatException;
 import com.epam.resourceprocessor.util.Mp3MetadataExtractor;
 import com.epam.resourceprocessor.util.SongMetadataMapper;
@@ -41,10 +42,13 @@ public class ResourceProcessingService {
         try {
             byte[] resource = resourceServiceClient.getResource(resourceId);
             Metadata rawMetadata = metadataExtractor.extract(resource);
-            log.info("[{}]: {}", resourceId, rawMetadata);
-            songServiceClient.saveSongMetadata(SongMetadataMapper.toDto(resourceId, rawMetadata));
+            SongMetadataDto songMetadata = SongMetadataMapper.toDto(resourceId, rawMetadata);
+            log.debug("[resource:{}] Raw metadata extracted: {}", resourceId, rawMetadata);
+            log.info("[resource:{}] Extracted metadata: '{}' by '{}' (album: '{}', year: {})",
+                    resourceId, songMetadata.name(), songMetadata.artist(), songMetadata.album(), songMetadata.year());
+            songServiceClient.saveSongMetadata(songMetadata);
             rabbitTemplate.convertAndSend(processedQueueName, String.valueOf(resourceId));
-            log.info("Successfully processed resource ID={}, notification sent to queue '{}'", resourceId, processedQueueName);
+            log.info("[resource:{}] Successfully processed, notification sent to queue '{}'", resourceId, processedQueueName);
         } catch (HttpClientErrorException.NotFound e) {
             log.warn("Resource with ID={} not found in Resource Service (possibly deleted), skipping processing.", resourceId);
         } catch (HttpClientErrorException e) {

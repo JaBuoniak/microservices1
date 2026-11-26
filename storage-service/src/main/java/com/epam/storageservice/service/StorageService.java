@@ -8,6 +8,8 @@ import com.epam.storageservice.exception.InvalidCsvParameterException;
 import com.epam.storageservice.exception.StorageAlreadyExistsException;
 import com.epam.storageservice.exception.StorageNotFoundException;
 import com.epam.storageservice.repository.StorageRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -16,6 +18,7 @@ import java.util.List;
 @Service
 public class StorageService {
 
+    private static final Logger log = LoggerFactory.getLogger(StorageService.class);
     private final StorageRepository storageRepository;
 
     public StorageService(StorageRepository storageRepository) {
@@ -32,9 +35,11 @@ public class StorageService {
     }
 
     public List<StorageResponse> getAllStorages() {
-        return storageRepository.findAll().stream()
+        List<StorageResponse> storages = storageRepository.findAll().stream()
                 .map(this::toResponse)
                 .toList();
+        log.info("Retrieved storages: count={}", storages.size());
+        return storages;
     }
 
     public StorageResponse getStorageById(Integer id) {

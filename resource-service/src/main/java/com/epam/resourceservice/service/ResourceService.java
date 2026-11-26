@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -21,6 +23,7 @@ import com.epam.resourceservice.repository.ResourceRepository;
 @Service
 public class ResourceService {
 
+    private static final Logger log = LoggerFactory.getLogger(ResourceService.class);
     public static final String PERMANENT_STORAGE_TYPE = "PERMANENT";
     public static final String STAGING_STORAGE_TYPE = "STAGING";
     private final ResourceRepository resourceRepository;
@@ -60,6 +63,8 @@ public class ResourceService {
         Resource savedResource = resourceRepository.save(resource);
 
         rabbitTemplate.convertAndSend(queueName, String.valueOf(savedResource.getId()));
+        log.info("[resource:{}] Uploaded to STAGING (bucket='{}', location='{}') and published to RabbitMQ",
+                savedResource.getId(), stagingStorage.bucket(), location);
 
         return savedResource.getId();
     }
@@ -147,5 +152,7 @@ public class ResourceService {
         resource.setBucket(permanentStorage.bucket());
         resource.setLocation(newLocation);
         resourceRepository.save(resource);
+        log.info("[resource:{}] Promoted from STAGING to PERMANENT (bucket='{}', location='{}')",
+                resourceId, permanentStorage.bucket(), newLocation);
     }
 }

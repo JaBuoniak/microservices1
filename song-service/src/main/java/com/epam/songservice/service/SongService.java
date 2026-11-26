@@ -9,6 +9,8 @@ import com.epam.songservice.exception.InvalidSongIdException;
 import com.epam.songservice.exception.SongAlreadyExistsException;
 import com.epam.songservice.exception.SongNotFoundException;
 import com.epam.songservice.repository.SongRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -17,6 +19,7 @@ import java.util.List;
 @Service
 public class SongService {
 
+    private static final Logger log = LoggerFactory.getLogger(SongService.class);
     private final SongRepository songRepository;
 
     public SongService(SongRepository songRepository) {
@@ -38,6 +41,8 @@ public class SongService {
         );
 
         Song savedSong = songRepository.save(song);
+        log.info("[resource:{}] Saved song metadata: '{}' by '{}' (duration: {}s)",
+                savedSong.getId(), savedSong.getName(), savedSong.getArtist(), savedSong.getDuration());
         return new CreateSongResponse(savedSong.getId());
     }
 
