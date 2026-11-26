@@ -1,6 +1,8 @@
 package com.epam.songservice.exception;
 
 import com.epam.songservice.dto.ErrorResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -17,49 +19,57 @@ import java.util.Map;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleValidationExceptions(MethodArgumentNotValidException ex) {
         Map<String, String> details = new LinkedHashMap<>();
         for (FieldError fieldError : ex.getBindingResult().getFieldErrors()) {
             details.put(fieldError.getField(), fieldError.getDefaultMessage());
         }
-        System.out.println("SongService validation failed: " + details);
+        log.warn("Song metadata validation failed: {}", details);
         ErrorResponse error = new ErrorResponse("Validation error", "400", details);
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<ErrorResponse> handleNotReadable(HttpMessageNotReadableException ex) {
+        log.warn("Request body JSON parsing error: {}", ex.getMessage());
         ErrorResponse error = new ErrorResponse("Request body JSON parsing error", "400");
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
     }
 
     @ExceptionHandler(SongAlreadyExistsException.class)
     public ResponseEntity<ErrorResponse> handleSongAlreadyExists(SongAlreadyExistsException ex) {
+        log.warn("Song metadata conflict: {}", ex.getMessage());
         ErrorResponse error = new ErrorResponse(ex.getMessage(), "409");
         return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
     }
 
     @ExceptionHandler(SongNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleSongNotFound(SongNotFoundException ex) {
+        log.warn("Song not found: {}", ex.getMessage());
         ErrorResponse error = new ErrorResponse(ex.getMessage(), "404");
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
     }
 
     @ExceptionHandler(InvalidSongIdException.class)
     public ResponseEntity<ErrorResponse> handleInvalidSongId(InvalidSongIdException ex) {
+        log.warn("Invalid song ID: {}", ex.getMessage());
         ErrorResponse error = new ErrorResponse(ex.getMessage(), "400");
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
     }
 
     @ExceptionHandler(InvalidCsvParameterException.class)
     public ResponseEntity<ErrorResponse> handleInvalidCsvParameter(InvalidCsvParameterException ex) {
+        log.warn("Invalid CSV parameter: {}", ex.getMessage());
         ErrorResponse error = new ErrorResponse(ex.getMessage(), "400");
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
     }
 
     @ExceptionHandler(MissingServletRequestParameterException.class)
     public ResponseEntity<ErrorResponse> handleMissingParameter(MissingServletRequestParameterException ex) {
+        log.warn("Missing required parameter: {}", ex.getParameterName());
         ErrorResponse error = new ErrorResponse(
                 "Missing required parameter: " + ex.getParameterName(),
                 "400"
@@ -69,6 +79,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public ResponseEntity<ErrorResponse> handleTypeMismatch(MethodArgumentTypeMismatchException ex) {
+        log.warn("Argument type mismatch: name='{}', value='{}'", ex.getName(), ex.getValue());
         ErrorResponse error = new ErrorResponse(
                 "Invalid value '" + ex.getValue() + "' for ID. Must be a positive integer",
                 "400"
@@ -78,6 +89,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGenericException(Exception ex) {
+        log.error("Internal server error: {}", ex.getMessage(), ex);
         ErrorResponse error = new ErrorResponse("An error occurred on the server", "500");
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
     }
