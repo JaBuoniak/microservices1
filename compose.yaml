@@ -95,6 +95,11 @@ services:
       dockerfile: eureka-service/Dockerfile
     container_name: eureka-service
     restart: always
+    environment:
+      LOGSTASH_HOST: logstash
+      LOGSTASH_PORT: ${LOGSTASH_PORT}
+      ELASTICSEARCH_HOST: elasticsearch
+      ELASTICSEARCH_PORT: ${ELASTICSEARCH_PORT}
     ports:
       - "${EUREKA_SERVICE_PORT}:8761"
     healthcheck:
@@ -112,6 +117,10 @@ services:
     restart: always
     environment:
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: ${EUREKA_SERVICE_URL}
+      LOGSTASH_HOST: logstash
+      LOGSTASH_PORT: ${LOGSTASH_PORT}
+      ELASTICSEARCH_HOST: elasticsearch
+      ELASTICSEARCH_PORT: ${ELASTICSEARCH_PORT}
     ports:
       - "${GATEWAY_SERVICE_PORT}:8088"
     healthcheck:
@@ -135,6 +144,10 @@ services:
       SPRING_DATASOURCE_USERNAME: ${STORAGE_DB_USER}
       SPRING_DATASOURCE_PASSWORD: ${STORAGE_DB_PASSWORD}
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: ${EUREKA_SERVICE_URL}
+      LOGSTASH_HOST: logstash
+      LOGSTASH_PORT: ${LOGSTASH_PORT}
+      ELASTICSEARCH_HOST: elasticsearch
+      ELASTICSEARCH_PORT: ${ELASTICSEARCH_PORT}
     ports:
       - "${STORAGE_SERVICE_PORT}:8087"
     healthcheck:
@@ -160,6 +173,10 @@ services:
       SPRING_DATASOURCE_USERNAME: ${SONG_DB_USER}
       SPRING_DATASOURCE_PASSWORD: ${SONG_DB_PASSWORD}
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: ${EUREKA_SERVICE_URL}
+      LOGSTASH_HOST: logstash
+      LOGSTASH_PORT: ${LOGSTASH_PORT}
+      ELASTICSEARCH_HOST: elasticsearch
+      ELASTICSEARCH_PORT: ${ELASTICSEARCH_PORT}
     ports:
       - "${SONG_SERVICE_PORT}:8081"
     healthcheck:
@@ -198,6 +215,10 @@ services:
       RESOURCE_QUEUE: ${RABBITMQ_QUEUE}
       RESOURCE_PROCESSED_QUEUE: ${RABBITMQ_PROCESSED_QUEUE}
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: ${EUREKA_SERVICE_URL}
+      LOGSTASH_HOST: logstash
+      LOGSTASH_PORT: ${LOGSTASH_PORT}
+      ELASTICSEARCH_HOST: elasticsearch
+      ELASTICSEARCH_PORT: ${ELASTICSEARCH_PORT}
     ports:
       - "${RESOURCE_SERVICE_PORT}:8080"
     healthcheck:
@@ -234,6 +255,10 @@ services:
       RESOURCE_SERVICE_URL: ${RESOURCE_SERVICE_URL}
       SONG_SERVICE_URL: ${SONG_SERVICE_URL}
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: ${EUREKA_SERVICE_URL}
+      LOGSTASH_HOST: logstash
+      LOGSTASH_PORT: ${LOGSTASH_PORT}
+      ELASTICSEARCH_HOST: elasticsearch
+      ELASTICSEARCH_PORT: ${ELASTICSEARCH_PORT}
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -244,9 +269,55 @@ services:
       eureka-service:
         condition: service_healthy
 
+  elasticsearch:
+    image: elasticsearch:8.15.3
+    container_name: elasticsearch
+    restart: always
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ports:
+      - "${ELASTICSEARCH_PORT}:9200"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s -f http://localhost:9200/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  kibana:
+    image: kibana:8.15.3
+    container_name: kibana
+    restart: always
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    ports:
+      - "${KIBANA_PORT}:5601"
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+
+  logstash:
+    image: logstash:8.15.3
+    container_name: logstash
+    restart: always
+    environment:
+      - "LS_JAVA_OPTS=-Xms256m -Xmx256m"
+    volumes:
+      - ./logstash/pipeline:/usr/share/logstash/pipeline:ro
+    ports:
+      - "${LOGSTASH_PORT}:5000"
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+
 volumes:
   resource_db_data:
   song_db_data:
   storage_db_data:
   localstack_data:
   rabbitmq_data:
+  elasticsearch_data:
